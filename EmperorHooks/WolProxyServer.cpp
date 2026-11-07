@@ -79,6 +79,13 @@ void WolProxyServer::run()
 
     if (!fromClient)
     {
+      // The port is open to the internet while hosting; a real game has at most 8 players.
+      constexpr size_t kMaxClients = 16;
+      if (this->clients.size() >= kMaxClients)
+      {
+        proxylog("too many clients, ignoring packet from %s\n", sockaddrToString(&from4).c_str());
+        continue;
+      }
       Log("got connection from %s\n", sockaddrToString(&from4).c_str());
       fromClient = &clients.emplace_back();
       fromClient->realReplyAddr = from4;
@@ -106,7 +113,7 @@ void WolProxyServer::run()
       if (header->originalTo.sin_addr.S_un.S_addr == this->servservAddr.S_un.S_addr)
       {
         u_short destPortH = ntohs(header->originalTo.sin_port);
-        ReceivedPacket& newPacket = this->receivedPacketsByPort[destPortH].emplace();
+        ReceivedPacket& newPacket = this->queueReceivedPacket(destPortH);
         newPacket.data = std::vector<uint8_t>(originalData, originalData + originalDataSize);
         newPacket.originalFrom = from4;
         newPacket.originalFrom.sin_port = htons(header->originalSourcePortH);

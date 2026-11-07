@@ -82,6 +82,9 @@ private:
   void clientLoop(Connection& connection);
 
 private:
+  static constexpr size_t kMaxConnections = 32;   // a real game has at most 8 players
+  static constexpr size_t kMaxLineLength = 8192;  // WOL command lines are far shorter
+
   std::vector<std::unique_ptr<Connection>> connections;
   std::mutex connectionsMutex;
   int32_t nextGameId = 1;

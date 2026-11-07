@@ -54,13 +54,24 @@ void WolProxyClient::run()
 
   while (true)
   {
-    int serverAddrSize = sizeof(this->serverAddr);
-    int bytesRead = recvfrom_orig(this->sock, (char*)&buff[0], buffSize, 0, (sockaddr*)&this->serverAddr, &serverAddrSize);
+    sockaddr_in from = {};
+    int fromSize = sizeof(from);
+    int bytesRead = recvfrom_orig(this->sock, (char*)&buff[0], buffSize, 0, (sockaddr*)&from, &fromSize);
 
     proxylog("client got something %d\n", bytesRead);
 
     if (bytesRead < int(sizeof(ForwardedPacketHeader)))
       continue;
+
+    // Only the host we connected to may talk to us. Previously any sender was accepted and even
+    // became the new server address, so anyone could inject packets into the game.
+    if (from.sin_family != AF_INET ||
+        from.sin_addr.S_un.S_addr != this->serverAddr.sin_addr.S_un.S_addr ||
+        from.sin_port != this->serverAddr.sin_port)
+    {
+      proxylog("ignoring packet from %s (not the host)\n", sockaddrToString((sockaddr*)&from).c_str());
+      continue;
+    }
 
     uint32_t crcReal = CRC::Calculate(buff + 4, bytesRead - 4, CRC::CRC_32());
     ForwardedPacketHeader* header = (ForwardedPacketHeader*)buff;
@@ -82,7 +93,7 @@ void WolProxyClient::run()
     std::scoped_lock lock(this->mutex);
 
     u_short destPortH = ntohs(header->originalTo.sin_port);
-    ReceivedPacket& newPacket = this->receivedPacketsByPort[destPortH].emplace();
+    ReceivedPacket& newPacket = this->queueReceivedPacket(destPortH);
     newPacket.data = std::vector<uint8_t>(originalData, originalData + originalDataSize);
     newPacket.originalFrom.sin_family = AF_INET;
     newPacket.originalFrom.sin_addr = header->originalSourceAddr;

@@ -35,8 +35,15 @@ int WolProxyBase::recvfrom_override(SOCKET s, char* buf, int len, int flags, str
   {
     ReceivedPacket& packet = it->second.front();
 
-    release_assert(len >= int(it->second.front().data.size()));
-    memcpy(buf, packet.data.data(), packet.data.size());
+    // A packet larger than the game's buffer comes from a misbehaving peer: truncate it instead of
+    // aborting the game (like a normal UDP socket would).
+    int copyLen = int(packet.data.size());
+    if (copyLen > len)
+    {
+      proxylog("Proxy::recvfrom_override: packet of %d bytes truncated to %d\n", copyLen, len);
+      copyLen = len;
+    }
+    memcpy(buf, packet.data.data(), copyLen);
 
     if (from)
     {
@@ -45,7 +52,7 @@ int WolProxyBase::recvfrom_override(SOCKET s, char* buf, int len, int flags, str
       *fromlen = sizeof(sockaddr_in);
     }
 
-    int retval = int(packet.data.size());
+    int retval = copyLen;
     it->second.pop();
 
     if (!it->second.empty() && socketData && socketData->isAsyncSelectRegistered)
