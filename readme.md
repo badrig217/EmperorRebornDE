@@ -44,10 +44,10 @@
    **Wichtig:** Der Pfad darf keine Umlaute oder Sonderzeichen enthalten (also nicht `C:\Users\Jürgen\…`).
 3. **Patch dazulegen**: Kopiere `EM109DE.EXE` (oder `EM109EN.EXE`) in denselben Ordner wie `EmperorSpice.exe`.
 4. **`EmperorSpice.exe` starten** und die Frage „Spiel jetzt hier installieren?“ mit OK bestätigen.
+   - Erscheint die blaue Windows-Meldung *„Der Computer wurde durch Windows geschützt“*: auf **„Weitere Informationen“** und dann **„Trotzdem ausführen“** klicken. Die Meldung kommt, weil das Programm nicht kostenpflichtig digital signiert ist.
 5. **Installationsquelle wählen:**
    - **Ja – von den CDs:** CD 1 einlegen (oder ISO in Windows einbinden), die weiteren CDs fragt der Installer nacheinander ab.
    - **Nein – aus ISO-Dateien:** die ISO-Dateien der 4 CDs auswählen (Mehrfachauswahl mit Strg). Welche Datei welche CD ist, erkennt der Launcher selbst am Datenträgernamen (`EMPEROR1`–`EMPEROR4`).
-   - Erscheint die blaue Windows-Meldung *„Der Computer wurde durch Windows geschützt“*: auf **„Weitere Informationen“** und dann **„Trotzdem ausführen“** klicken. Die Meldung kommt, weil das Programm nicht kostenpflichtig digital signiert ist.
 6. Nach der Installation liegt eine Verknüpfung **„Emperor Spice“** auf dem Desktop. Im Launcher Auflösung wählen und auf **Spielen** klicken.
 
 Danach brauchst du die CDs nicht mehr.
