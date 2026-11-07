@@ -26,6 +26,8 @@
 - **Flüssiges Karten-Scrollen**, Zwischensequenzen wahlweise im Originalformat 4:3.
 - **Multiplayer** über direkte IP-Verbindung (der alte Westwood-Online-Server existiert nicht mehr).
 - **Desktop-Verknüpfung** wird nach der Installation automatisch angelegt.
+- **Weiter herauszoomen** (neu in 1.1): im Launcher unter „Kamera-Zoom“ bis 1,75x, empfohlen 1,5x.
+- **Große Meldungen und Hinweise im Spiel** (neu in 1.1): die kleine Spielschrift doppelt so groß und scharf, neu gezeichnet aus der freien Schrift DejaVu Sans. Ab 1440p wird sie automatisch vorgeschlagen.
 - **Geld-Cheat** (optional, nur Einzelspieler): im Launcher unter „Extras“ einschalten, dann gibt **Strg+Umschalt+G** im Spiel +25.000 Credits. Im Multiplayer ist er gesperrt.
 
 
@@ -53,6 +55,7 @@
    - **Ja – von den CDs:** CD 1 einlegen (oder ISO in Windows einbinden), die weiteren CDs fragt der Installer nacheinander ab.
    - **Nein – aus ISO-Dateien:** die ISO-Dateien der 4 CDs auswählen (Mehrfachauswahl mit Strg). Welche Datei welche CD ist, erkennt der Launcher selbst am Datenträgernamen (`EMPEROR1`–`EMPEROR4`).
 6. Nach der Installation liegt eine Verknüpfung **„Emperor Spice“** auf dem Desktop. Im Launcher Auflösung wählen und auf **Spielen** klicken.
+   - **Tipp:** Wähle die Auflösung deines Monitors (z. B. 2560 x 1440 Breitbild), nicht 1280 x 720. Dann sind Schlachtfeld, Seitenleiste und Menüs gestochen scharf. Für die kleinen Meldungen „Große Meldungen und Hinweise im Spiel“ anhaken.
 
 Danach brauchst du die CDs nicht mehr.
 
@@ -73,7 +76,7 @@ Deine Änderungen im ReShade-Menü bleiben erhalten. Ohne Haken entfernt der Lau
 
 - **Das Spiel startet nicht / hängt:** Im Ordner `data` liegt die Protokolldatei `emperor.txt`. Hänge sie bei einem [Issue](../../issues) an.
 - **Warnung „Falsche Game.exe-Version“:** Die Installation ist nicht vollständig durchgelaufen oder es wurde ein anderer Patch verwendet. Im Dialog „Nein“ wählen, um neu zu installieren.
-- **Texte im Spiel sehr klein:** Im Launcher eine der Auflösungen „Hochskaliert …, große UI“ wählen (Bild wird etwas weicher, Schrift größer).
+- **Texte im Spiel sehr klein:** Im Launcher unter „Extras“ **„Große Meldungen und Hinweise im Spiel“** anhaken. Alternativ eine der Auflösungen „Hochskaliert …, große UI“ wählen (dann wird das ganze Bild weicher).
 - **Grafik-Paket ausprobieren ohne Risiko:** Haken im Launcher entfernen – alles ist wie vorher.
 
 ---
@@ -93,6 +96,8 @@ Deine Änderungen im ReShade-Menü bleiben erhalten. Ohne Haken entfernt der Lau
 - **Smooth map scrolling**, cutscenes optionally in their original 4:3.
 - **Multiplayer** via direct IP (the old Westwood Online servers are gone).
 - **Desktop shortcut** is created after installation.
+- **Zoom out further** (new in 1.1): "Camera zoom" in the launcher, up to 1.75x (1.5x recommended).
+- **Large in-game messages and hints** (new in 1.1): the small in-game font at 2x, sharp, redrawn from the free DejaVu Sans font. Suggested automatically from 1440p.
 - **Money cheat** (optional, single player only): enable it under "Extras" in the launcher, then **Ctrl+Shift+G** adds 25,000 credits. Disabled in multiplayer.
 
 
@@ -108,7 +113,7 @@ Deine Änderungen im ReShade-Menü bleiben erhalten. Ohne Haken entfernt der Lau
 2. Copy `EM109EN.EXE` (or `EM109DE.EXE`) next to `EmperorSpice.exe`.
 3. Run `EmperorSpice.exe`, confirm the installation and choose the source: **Yes** = CDs (insert disc 1), **No** = select the 4 ISO files (the launcher identifies each disc by its label `EMPEROR1`–`EMPEROR4`).
 4. Confirm. If Windows SmartScreen appears, click **"More info" → "Run anyway"** (the program is not commercially code-signed).
-5. Use the **Emperor Spice** desktop shortcut from then on, pick a resolution and click **Play**.
+5. Use the **Emperor Spice** desktop shortcut from then on, pick a resolution and click **Play**. Tip: pick your monitor's native resolution (e.g. 2560 x 1440 widescreen) rather than 1280 x 720 – everything gets sharp – and tick "Large in-game messages and hints".
 
 **Graphics pack:** Scroll Lock toggles the effects, Home opens the ReShade menu. Do **not** enable MSAA in dgVoodoo – the game hangs with it; anti-aliasing is done by ReShade (SMAA).
 
