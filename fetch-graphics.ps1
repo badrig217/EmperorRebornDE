@@ -22,7 +22,7 @@ $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
 
 # --- pinned versions (one line per component) ---------------------------------------------
-$DgVoodooUrl    = "https://dege.fw.hu/dgVoodoo2/bin/dgVoodoo2_87_6.zip";      $DgVoodooSha256 = ""
+$DgVoodooUrl    = "https://dege.fw.hu/dgVoodoo2/bin/dgVoodoo2_87_2.zip";      $DgVoodooSha256 = ""
 $ReShadeUrl     = "https://reshade.me/downloads/ReShade_Setup_6.8.0.exe";      $ReShadeSha256  = ""
 $ShadersRepo    = "https://github.com/crosire/reshade-shaders";                $ShadersRef     = "slim"
 $SweetFxRepo    = "https://github.com/CeeJayDK/SweetFX";                       $SweetFxRef     = "master"
