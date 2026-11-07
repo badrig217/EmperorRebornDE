@@ -22,19 +22,19 @@ $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
 
 # --- pinned versions (one line per component) ---------------------------------------------
-$DgVoodooVer    = "2.87.2";                                                     $DgVoodooSha256 = ""
+$DgVoodooMinVer = 0x287;                                                       $DgVoodooSha256 = ""   # min. 2.87
 $ReShadeUrl     = "https://reshade.me/downloads/ReShade_Setup_6.8.0.exe";      $ReShadeSha256  = ""
 $ShadersRepo    = "https://github.com/crosire/reshade-shaders";                $ShadersRef     = "slim"
 $SweetFxRepo    = "https://github.com/CeeJayDK/SweetFX";                       $SweetFxRef     = "master"
 # -------------------------------------------------------------------------------------------
 
-# dgVoodoo2 is published on the author's GitHub releases and his own server; try the official locations in order.
-$v = ($DgVoodooVer -replace '^2\.', '') -replace '\.', '_'   # 2.87.2 -> 87_2
+# dgVoodoo2: the author's server only keeps the newest release (older zips are removed), so a fixed
+# version number cannot be downloaded later. We take the newest release via the author's own
+# "latest" link, require at least $DgVoodooMinVer and log the exact version + SHA256 of what got packaged.
 $DgVoodooUrls = @(
-  "https://github.com/dege-diosg/dgVoodoo2/releases/download/v$DgVoodooVer/dgVoodoo2_$v.zip",
-  "https://dege.fw.hu/dgVoodoo2/bin/dgVoodoo2_$v.zip",
-  "http://dege.fw.hu/dgVoodoo2/bin/dgVoodoo2_$v.zip",
-  "http://dege.freeweb.hu/dgVoodoo2/bin/dgVoodoo2_$v.zip"
+  "https://dege.fw.hu/dgVoodoo2/dgVoodoo2_latest.zip",
+  "http://dege.fw.hu/dgVoodoo2/dgVoodoo2_latest.zip",
+  "http://dege.freeweb.hu/dgVoodoo2/dgVoodoo2_latest.zip"
 )
 
 function Get-Pinned([string[]]$urls, [string]$sha, [string]$dest) {
@@ -94,6 +94,11 @@ Expand-Archive $dgvZip -DestinationPath $dgvDir
 Copy-Item (Join-Path $dgvDir "MS\x86\DDraw.dll")   $gfx
 Copy-Item (Join-Path $dgvDir "MS\x86\D3DImm.dll")  $gfx
 $conf = Get-Content (Join-Path $dgvDir "dgVoodoo.conf")
+$verLine = $conf | Where-Object { $_ -match '^\s*Version\s*=\s*(0x[0-9a-fA-F]+)' } | Select-Object -First 1
+if (-not $verLine) { throw "dgVoodoo.conf: no Version line found" }
+$dgvVersion = [Convert]::ToInt32(($verLine -replace '.*=\s*0x', ''), 16)
+Write-Host ("  dgVoodoo2 version in package: 0x{0:X}" -f $dgvVersion)
+if ($dgvVersion -lt $DgVoodooMinVer) { throw ("dgVoodoo2 too old: 0x{0:X}, need at least 0x{1:X}" -f $dgvVersion, $DgVoodooMinVer) }
 $conf = Set-ConfValues $conf "General"  @{ "OutputAPI" = "d3d11_fl10_1" }
 $conf = Set-ConfValues $conf "DirectX"  @{ "Filtering" = "16"; "Antialiasing" = "appdriven"; "dgVoodooWatermark" = "false" }
 Set-Content -Path (Join-Path $gfx "dgVoodoo.conf") -Value $conf -Encoding ascii
