@@ -14,6 +14,7 @@
 #include "WrapWinsock.hpp"
 #include "Log.hpp"
 #include "MoneyCheat.hpp"
+#include "LargeFont.hpp"
 #include "PatchWol.hpp"
 #include "Error.hpp"
 #include <optional>
@@ -129,6 +130,9 @@ void runHooks()
 
   // Optional single-player money cheat (polled from EndScene).
   initMoneyCheat(settings.moneyCheat);
+
+  // Optional 2x in-game text (needs the HD font archives the launcher installs).
+  initLargeFont(settings.largeFont);
 
   // In-game 2D HUD/sidebar widescreen fix, applied to the loaded image. Capture the vanilla bytes now;
   // it is toggled on ONLY while in a mission (see PickingTracer) so the front-end menu stays

@@ -92,6 +92,9 @@ Copy-Item (Join-Path $root "license.txt")              $stageDir
 Copy-Item (Join-Path $root "THIRD-PARTY-NOTICES.txt")  $stageDir
 Copy-Item (Join-Path $root "readme.md") (Join-Path $stageDir "README.txt")
 
+# --- large in-game text (HD font archives, built by tools/fonts/build_fontpack.py) ------------
+Copy-Item (Join-Path $root "fonts") (Join-Path $stageDir "fonts") -Recurse
+
 # --- graphics pack (dgVoodoo2 + ReShade, downloaded from the official sources) ---------------
 if (-not $SkipGraphics) {
   & (Join-Path $root "fetch-graphics.ps1")
