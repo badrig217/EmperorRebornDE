@@ -321,6 +321,10 @@ HWND cutscene43Checkbox = nullptr;
 HWND smoothScrollCheckbox = nullptr;
 HWND languageCombo = nullptr;
 HWND graphicsPackCheckbox = nullptr;
+HWND cameraZoomCombo = nullptr;
+
+// Farthest camera zoom choices (percent of the original game's farthest zoom)
+const int cameraZoomSteps[] = { 100, 150, 200 };
 HWND shortcutButton = nullptr;
 HWND moneyCheatCheckbox = nullptr;
 HWND largeFontCheckbox = nullptr;
@@ -370,6 +374,13 @@ void loadAndApplySettings()
   SendMessageA(cutscene43Checkbox, BM_SETCHECK, settings.cutscene43 ? BST_CHECKED : BST_UNCHECKED, 0);
   SendMessageA(smoothScrollCheckbox, BM_SETCHECK, settings.smoothScroll ? BST_CHECKED : BST_UNCHECKED, 0);
   SendMessageA(graphicsPackCheckbox, BM_SETCHECK, settings.graphicsPack ? BST_CHECKED : BST_UNCHECKED, 0);
+  {
+    int zoomIndex = 0;
+    for (int i = 0; i < int(std::size(cameraZoomSteps)); i++)
+      if (cameraZoomSteps[i] <= settings.cameraZoom)
+        zoomIndex = i;
+    SendMessageA(cameraZoomCombo, CB_SETCURSEL, zoomIndex, 0);
+  }
   SendMessageA(moneyCheatCheckbox, BM_SETCHECK, settings.moneyCheat ? BST_CHECKED : BST_UNCHECKED, 0);
   SendMessageA(largeFontCheckbox, BM_SETCHECK, settings.largeFont ? BST_CHECKED : BST_UNCHECKED, 0);
 
@@ -406,6 +417,17 @@ LRESULT onSmoothScrollCheckboxClicked(HWND hwnd, UINT message, WPARAM wParam, LP
   settings.smoothScroll = SendMessage(smoothScrollCheckbox, BM_GETCHECK, 0, 0) == BST_CHECKED;
   settings.writeSettings();
 
+  return CallWindowProc(defWndProc, hwnd, message, wParam, lParam);
+}
+
+LRESULT onCameraZoomChanged(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+  int index = int(SendMessageA(cameraZoomCombo, CB_GETCURSEL, 0, 0));
+  if (index >= 0 && index < int(std::size(cameraZoomSteps)))
+  {
+    settings.cameraZoom = cameraZoomSteps[index];
+    settings.writeSettings();
+  }
   return CallWindowProc(defWndProc, hwnd, message, wParam, lParam);
 }
 
@@ -588,6 +610,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
   if (message == WM_COMMAND && HIWORD(wParam) == BN_CLICKED && reinterpret_cast<HWND>(lParam) == smoothScrollCheckbox) return onSmoothScrollCheckboxClicked(hwnd, message, wParam, lParam);
   if (message == WM_COMMAND && HIWORD(wParam) == CBN_SELCHANGE && reinterpret_cast<HWND>(lParam) == languageCombo) return onLanguageChanged(hwnd, message, wParam, lParam);
   if (message == WM_COMMAND && HIWORD(wParam) == CBN_SELCHANGE && reinterpret_cast<HWND>(lParam) == resolutionCombo) return onResolutionChanged(hwnd, message, wParam, lParam);
+  if (message == WM_COMMAND && HIWORD(wParam) == CBN_SELCHANGE && reinterpret_cast<HWND>(lParam) == cameraZoomCombo) return onCameraZoomChanged(hwnd, message, wParam, lParam);
   if (message == WM_COMMAND && HIWORD(wParam) == BN_CLICKED && reinterpret_cast<HWND>(lParam) == hostGameRadio) return onServerOrClientRadioClicked(hwnd, message, wParam, lParam);
   if (message == WM_COMMAND && HIWORD(wParam) == BN_CLICKED && reinterpret_cast<HWND>(lParam) == connectToServerRadio) return onServerOrClientRadioClicked(hwnd, message, wParam, lParam);
   if (message == WM_COMMAND && HIWORD(wParam) == EN_CHANGE && reinterpret_cast<HWND>(lParam) == serverAddressTextbox) return onServerAddressTextChanged(hwnd, message, wParam, lParam);
@@ -886,7 +909,7 @@ int wmain(int argc, wchar_t* argv[])
 
   // --- Graphics (left) ---
   {
-    const int h = S(204);
+    const int h = S(236);
     groupBox(T(L"Graphics", L"Grafik"), colL, y0, colLW, h);
     int x = colL + S(14);
     int y = y0 + S(24);
@@ -912,6 +935,13 @@ int wmain(int argc, wchar_t* argv[])
     graphicsPackCheckbox = CreateWindowEx(0, WC_BUTTON, T(L"Graphics pack (dgVoodoo + ReShade)", L"Grafik-Paket (dgVoodoo + ReShade)"), WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTOCHECKBOX, x, y, S(305), S(22), window, nullptr, nullptr, nullptr);
     if (!graphicsPack::available(std::filesystem::path(getFolderThisExeIsIn()) / L"graphics"))
       EnableWindow(graphicsPackCheckbox, FALSE);
+    y += rowH + S(6);
+
+    CreateWindowEx(0, WC_STATIC, T(L"Camera zoom", L"Kamera-Zoom"), WS_CHILD | WS_VISIBLE, x, y + S(4), S(90), S(22), window, nullptr, nullptr, nullptr);
+    cameraZoomCombo = CreateWindowEx(0, WC_COMBOBOX, nullptr, WS_CHILD | WS_VISIBLE | WS_TABSTOP | CBS_DROPDOWNLIST, x + S(96), y, S(206), S(120), window, nullptr, nullptr, nullptr);
+    SendMessageW(cameraZoomCombo, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(T(L"Original", L"Original")));
+    SendMessageW(cameraZoomCombo, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(T(L"Farther (1.5x)", L"Weiter (1,5x)")));
+    SendMessageW(cameraZoomCombo, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(T(L"Far (2x)", L"Sehr weit (2x)")));
   }
 
   // --- Language + Advanced (right) ---
@@ -923,7 +953,7 @@ int wmain(int argc, wchar_t* argv[])
     SendMessageW(languageCombo, CB_SETCURSEL, gLang == Lang::DE ? 1 : 0, 0);
 
     int gy = y0 + S(70);
-    groupBox(T(L"Troubleshooting", L"Fehlersuche"), colR, gy, colRW, S(134));
+    groupBox(T(L"Troubleshooting", L"Fehlersuche"), colR, gy, colRW, S(166));
     int x = colR + S(14);
     int y = gy + S(24);
     pauseOnStartupCheckbox = CreateWindowEx(0, WC_BUTTON, T(L"Pause on startup", L"Beim Start pausieren"), WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTOCHECKBOX, x, y, colRW - S(24), S(22), window, nullptr, nullptr, nullptr);
@@ -934,7 +964,7 @@ int wmain(int argc, wchar_t* argv[])
   }
 
   // --- Multiplayer (full width) ---
-  int mpY = y0 + S(216);
+  int mpY = y0 + S(248);
   {
     const int h = S(132);
     groupBox(L"Multiplayer", colL, mpY, clientW - S(32), h);

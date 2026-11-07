@@ -14,6 +14,7 @@
 #include "WrapWinsock.hpp"
 #include "Log.hpp"
 #include "MoneyCheat.hpp"
+#include "CameraZoom.hpp"
 #include "LargeFont.hpp"
 #include "PatchWol.hpp"
 #include "Error.hpp"
@@ -130,6 +131,7 @@ void runHooks()
 
   // Optional single-player money cheat (polled from EndScene).
   initMoneyCheat(settings.moneyCheat);
+  initCameraZoom(settings.cameraZoom);
 
   // Optional 2x in-game text (needs the HD font archives the launcher installs).
   initLargeFont(settings.largeFont);
