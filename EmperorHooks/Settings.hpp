@@ -57,6 +57,9 @@ public:
   // Single-player money cheat (Ctrl+Shift+G = +25,000 credits). Off by default, never active in multiplayer.
   bool moneyCheat = false;
 
+  // Large in-game text: the game's two text fonts at 2x size (Emperor Spice HD fonts). Off by default.
+  bool largeFont = false;
+
 public:
   void readSettings()
   {
@@ -135,6 +138,10 @@ public:
     if (moneyCheatTemp)
       moneyCheat = *moneyCheatTemp == "1";
 
+    std::optional<std::string> largeFontTemp = regReadString(key, "LargeFont");
+    if (largeFontTemp)
+      largeFont = *largeFontTemp == "1";
+
     RegCloseKey(key);
   }
 
@@ -160,6 +167,7 @@ public:
     regWriteString(key, "Language", language);
     regWriteString(key, "GraphicsPack", graphicsPack ? "1" : "0");
     regWriteString(key, "MoneyCheat", moneyCheat ? "1" : "0");
+    regWriteString(key, "LargeFont", largeFont ? "1" : "0");
 
     RegCloseKey(key);
   }
