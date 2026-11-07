@@ -10,7 +10,7 @@ fullscreen scaling and working multiplayer.
 ![License](https://img.shields.io/badge/license-MIT--0-green)
 ![Build](https://img.shields.io/badge/build-Visual%20Studio%202022%20%7C%20x86-5C2D91?logo=visualstudio)
 
-![Emperor: Battle for Dune running in 16:9 widescreen](screenshots/gameplay-2.png)
+![Emperor: Battle for Dune running in 16:9 widescreen](../screenshots/gameplay-2.png)
 
 I wanted to play Emperor again and ran into the usual problems with a 25-year-old game on modern
 Windows: the installer fights the OS, and even once it runs the game sits in a small box in the
@@ -54,9 +54,9 @@ It is still the original 2001 game with all its original content. The one real c
 widescreen; leave it on a 4:3 resolution and it runs exactly like it always did. Preservation, not a
 remaster.
 
-![The main menu in 16:9 widescreen](screenshots/menu.png)
-![Another menu view in widescreen](screenshots/menu-2.png)
-![A bigger battle in widescreen](screenshots/gameplay-3.png)
+![The main menu in 16:9 widescreen](../screenshots/menu.png)
+![Another menu view in widescreen](../screenshots/menu-2.png)
+![A bigger battle in widescreen](../screenshots/gameplay-3.png)
 
 ## Install
 
@@ -71,9 +71,8 @@ in this repo.
 3. Pick your resolution and Fullscreen in the launcher, then Play.
 
 First-run setup happens once. There is a plain-English walkthrough in
-[`INSTALL.txt`](INSTALL.txt).
+[`INSTALL.txt`](../INSTALL.txt).
 
-<p align="center"><img src="screenshots/launcher-ui.png" alt="The Emperor Reborn launcher" width="360"></p>
 
 ### Resolution
 
@@ -178,10 +177,10 @@ of the original patch.
 
 - Original project: [EmperorLauncher](https://github.com/wheybags/EmperorLauncher) by Tom Mason
   (wheybags), MIT-0.
-- This fork keeps MIT-0 (see [`license.txt`](license.txt)). Third-party components are listed in
-  [`THIRD-PARTY-NOTICES.txt`](THIRD-PARTY-NOTICES.txt).
+- This fork keeps MIT-0 (see [`license.txt`](../license.txt)). Third-party components are listed in
+  [`THIRD-PARTY-NOTICES.txt`](../THIRD-PARTY-NOTICES.txt).
 - In-game HUD / sidebar widescreen patch by **Moro**, shared freely in the Emperor community on
-  Discord and used with thanks (see [`THIRD-PARTY-NOTICES.txt`](THIRD-PARTY-NOTICES.txt)).
+  Discord and used with thanks (see [`THIRD-PARTY-NOTICES.txt`](../THIRD-PARTY-NOTICES.txt)).
 - Maintained by azmawee ([GitHub](https://github.com/azmawee)).
 
 MIT-0 covers only the source in this repo. It grants no rights to *Emperor: Battle for Dune*, its

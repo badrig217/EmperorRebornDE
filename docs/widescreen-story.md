@@ -1,12 +1,8 @@
----
-title: "How I got real widescreen working on Emperor: Battle for Dune"
-description: "The long version: reverse engineering a 25 year old Westwood game to add true 16:9 widescreen, including the interface, the part everyone else gave up on."
-image: /screenshots/gameplay-2.png
----
+> Write-up by azmawee, author of Emperor Reborn, on which Emperor Spice is based. Kept with thanks.
 
 # How I got real widescreen working on Emperor
 
-[Back to the main page]({{ "/" | relative_url }})
+[Back to the Emperor Spice README](../readme.md)
 
 This is the long story behind the one line on the front page that says the widescreen interface
 "is done too". It took a lot longer than that sentence makes it sound, and the last bug nearly beat
@@ -123,8 +119,8 @@ battles, at a real widescreen aspect, and everything lands where you click it.
 It is the same 2001 game with all its content untouched. If you would rather have the original look,
 pick a 4:3 resolution and it runs exactly as it always did.
 
-[Back to the main page]({{ "/" | relative_url }})
+[Back to the Emperor Spice README](../readme.md)
 &nbsp;|&nbsp;
-[Download]({{ "https://github.com/azmawee/EmperorReborn/releases/latest" }})
+[Emperor Reborn releases](https://github.com/azmawee/EmperorReborn/releases/latest)
 &nbsp;|&nbsp;
 [Source](https://github.com/azmawee/EmperorReborn)
