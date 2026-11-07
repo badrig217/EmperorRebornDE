@@ -424,3 +424,7 @@ EM109EN.DLL
 # Reverse-engineering dev notes (internal, contain third-party code excerpts).
 /WIDESCREEN-NOTES.md
 /dev-notes/
+
+# Emperor Spice: third-party graphics components downloaded at build time (fetch-graphics.ps1)
+/build-graphics/
+/EmperorSpice.exe

@@ -63,28 +63,28 @@ def emblem(size):
     return img.resize((size, size), Image.LANCZOS)
 
 
-def banner():
-    w, h = 514, 118
+def banner(sc=2):
+    """Banner at 2x the 514x118 layout size; the launcher scales it down smoothly for the display DPI."""
+    w, h = 514 * sc, 118 * sc
     img = Image.new("RGB", (w, h))
     d = ImageDraw.Draw(img)
     for y in range(h):
         d.line((0, y, w, y), fill=lerp(BG_TOP, BG_BOT, y / h))
-    # faint warm haze on the left behind the emblem
     haze = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-    ImageDraw.Draw(haze).ellipse((-20, -10, 140, 128), fill=SPICE + (45,))
-    img.paste(Image.alpha_composite(img.convert("RGBA"), haze.filter(ImageFilter.GaussianBlur(30))).convert("RGB"))
+    ImageDraw.Draw(haze).ellipse((-20 * sc, -10 * sc, 140 * sc, 128 * sc), fill=SPICE + (45,))
+    img = Image.alpha_composite(img.convert("RGBA"), haze.filter(ImageFilter.GaussianBlur(30 * sc))).convert("RGB")
 
-    e = emblem(96)
-    img.paste(e, (14, 11), e)
+    e = emblem(96 * sc)
+    img.paste(e, (14 * sc, 11 * sc), e)
 
-    title = font(["DejaVuSansCondensed-Bold.ttf", "impact.ttf"], 40)
-    sub = font(["segoeui.ttf", "DejaVuSans.ttf"], 15)
+    title = font(["DejaVuSansCondensed-Bold.ttf", "impact.ttf"], 40 * sc)
+    sub = font(["segoeui.ttf", "DejaVuSans.ttf"], 15 * sc)
     d = ImageDraw.Draw(img)
-    d.text((124, 16), "EMPEROR SPICE", font=title, fill=TEXT)
-    d.text((126, 72), "Emperor auf modernen PCs  \u00b7  Community-Edition", font=sub, fill=SUBTEXT)
-    d.text((126, 92), "based on / basiert auf Emperor Reborn", font=sub, fill=(150, 136, 118))
+    d.text((124 * sc, 16 * sc), "EMPEROR SPICE", font=title, fill=TEXT)
+    d.text((126 * sc, 72 * sc), "Emperor auf modernen PCs  \u00b7  Community-Edition", font=sub, fill=SUBTEXT)
+    d.text((126 * sc, 92 * sc), "based on / basiert auf Emperor Reborn", font=sub, fill=(150, 136, 118))
     img.save(os.path.join(OUT, "launcher-header.bmp"))
-    img.save(os.path.join(OUT, "launcher-header-preview.png"))
+    img.resize((514, 118), Image.LANCZOS).save(os.path.join(OUT, "launcher-header-preview.png"))
 
 
 def icon():

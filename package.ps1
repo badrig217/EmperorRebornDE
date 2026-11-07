@@ -23,6 +23,8 @@
 param(
   [string]$Version = "1.0",
   [switch]$SkipBuild,
+  # Skip downloading the graphics pack (dgVoodoo2 + ReShade) - the zip then contains no graphics folder.
+  [switch]$SkipGraphics,
   # Optional toolset override. Local builds leave it empty and use the project's toolset; CI passes a
   # toolset that exists on the runner (e.g. v143 on windows-latest) since the dev machine uses a newer one.
   [string]$PlatformToolset = ""
@@ -64,9 +66,9 @@ foreach ($f in @($exe, $dll)) {
 
 # --- copyright safety net ---------------------------------------------------
 # A clean launcher is a few hundred KB. If the EA v1.09 patch (~5.8 MB) got
-# embedded, the exe balloons past ~1 MB - refuse to package that.
+# embedded, the exe balloons well past 2 MB (the launcher with its header art is ~1 MB) - refuse to package that.
 $exeSizeMB = (Get-Item $exe).Length / 1MB
-if ($exeSizeMB -gt 1.0) {
+if ($exeSizeMB -gt 2.0) {
   throw ("EmperorSpice.exe is {0:N1} MB - that is too big. The EA patch (EM109EN.EXE) " -f $exeSizeMB) +
         "is probably embedded. Remove the PATCH109EN line from EmperorLauncher\Resources.rc and rebuild. " +
         "Refusing to package copyrighted EA content."
@@ -89,6 +91,12 @@ Copy-Item (Join-Path $root "INSTALL.txt")              $stageDir
 Copy-Item (Join-Path $root "license.txt")              $stageDir
 Copy-Item (Join-Path $root "THIRD-PARTY-NOTICES.txt")  $stageDir
 Copy-Item (Join-Path $root "readme.md") (Join-Path $stageDir "README.txt")
+
+# --- graphics pack (dgVoodoo2 + ReShade, downloaded from the official sources) ---------------
+if (-not $SkipGraphics) {
+  & (Join-Path $root "fetch-graphics.ps1")
+  Copy-Item (Join-Path $root "build-graphics\graphics") (Join-Path $stageDir "graphics") -Recurse
+}
 
 # --- checksums of the contents ----------------------------------------------
 # Hash every staged file and write SHA256SUMS.txt INTO the folder so it ships

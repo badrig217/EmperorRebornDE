@@ -17,6 +17,7 @@
 #include "NetworkTest.hpp"
 #include "resource.h"
 #include "Lang.hpp"
+#include "GraphicsPack.hpp"
 
 // Modern Windows look for buttons, checkboxes and combo boxes (Common Controls v6). Without this the
 // launcher's controls are drawn in the Windows 95 style.
@@ -242,6 +243,24 @@ inline int S(int v) { return MulDiv(v, int(gDpi), 96); } // scale 96-DPI layout 
 HFONT gUiFont = nullptr;
 HFONT gLinkFont = nullptr;
 int gHeaderBandHeight = 0;
+HWND gHeaderPic = nullptr;
+HBITMAP gHeaderBmp = nullptr;
+
+void drawHeader(const DRAWITEMSTRUCT* item)
+{
+  if (!gHeaderBmp)
+    return;
+  BITMAP bm = {};
+  GetObjectW(gHeaderBmp, sizeof(bm), &bm);
+  HDC mem = CreateCompatibleDC(item->hDC);
+  HGDIOBJ old = SelectObject(mem, gHeaderBmp);
+  SetStretchBltMode(item->hDC, HALFTONE);
+  SetBrushOrgEx(item->hDC, 0, 0, nullptr);
+  const RECT& rc = item->rcItem;
+  StretchBlt(item->hDC, rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top, mem, 0, 0, bm.bmWidth, bm.bmHeight, SRCCOPY);
+  SelectObject(mem, old);
+  DeleteDC(mem);
+}
 HBRUSH gBackgroundBrush = CreateSolidBrush(RGB(250, 249, 247));
 const COLORREF gTextColor = RGB(32, 32, 32);
 const COLORREF gLinkColor = RGB(180, 90, 20);
@@ -294,6 +313,7 @@ HWND disableCursorCaptureCheckbox = nullptr;
 HWND cutscene43Checkbox = nullptr;
 HWND smoothScrollCheckbox = nullptr;
 HWND languageCombo = nullptr;
+HWND graphicsPackCheckbox = nullptr;
 
 // Command line argument (custom install dir) we were started with, so a language switch can restart us identically.
 std::wstring gInstallDirArg;
@@ -339,6 +359,7 @@ void loadAndApplySettings()
   SendMessageA(disableCursorCaptureCheckbox, BM_SETCHECK, settings.disableCursorCapture ? BST_CHECKED : BST_UNCHECKED, 0);
   SendMessageA(cutscene43Checkbox, BM_SETCHECK, settings.cutscene43 ? BST_CHECKED : BST_UNCHECKED, 0);
   SendMessageA(smoothScrollCheckbox, BM_SETCHECK, settings.smoothScroll ? BST_CHECKED : BST_UNCHECKED, 0);
+  SendMessageA(graphicsPackCheckbox, BM_SETCHECK, settings.graphicsPack ? BST_CHECKED : BST_UNCHECKED, 0);
 
   refreshDerivedState();
 }
@@ -373,6 +394,13 @@ LRESULT onSmoothScrollCheckboxClicked(HWND hwnd, UINT message, WPARAM wParam, LP
   settings.smoothScroll = SendMessage(smoothScrollCheckbox, BM_GETCHECK, 0, 0) == BST_CHECKED;
   settings.writeSettings();
 
+  return CallWindowProc(defWndProc, hwnd, message, wParam, lParam);
+}
+
+LRESULT onGraphicsPackCheckboxClicked(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+  settings.graphicsPack = SendMessage(graphicsPackCheckbox, BM_GETCHECK, 0, 0) == BST_CHECKED;
+  settings.writeSettings();
   return CallWindowProc(defWndProc, hwnd, message, wParam, lParam);
 }
 
@@ -491,6 +519,11 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
     SetTextColor(dc, (control == githubLink || control == facebookLink) ? gLinkColor : gTextColor);
     return reinterpret_cast<LRESULT>(gBackgroundBrush);
   }
+  if (hwnd == window && message == WM_DRAWITEM && reinterpret_cast<const DRAWITEMSTRUCT*>(lParam)->hwndItem == gHeaderPic)
+  {
+    drawHeader(reinterpret_cast<const DRAWITEMSTRUCT*>(lParam));
+    return TRUE;
+  }
   if (hwnd == window && message == WM_SETCURSOR)
   {
     HWND over = reinterpret_cast<HWND>(wParam);
@@ -504,10 +537,11 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
   if (message == WM_CLOSE && hwnd == window) return OnWindowClose(hwnd, message, wParam, lParam);
 
   if (message == WM_COMMAND && HIWORD(wParam) == STN_CLICKED && reinterpret_cast<HWND>(lParam) == githubLink) return onLinkClicked(hwnd, message, wParam, lParam, "https://github.com/azmawee/EmperorReborn");
-  if (message == WM_COMMAND && HIWORD(wParam) == STN_CLICKED && reinterpret_cast<HWND>(lParam) == facebookLink) return onLinkClicked(hwnd, message, wParam, lParam, "https://github.com/badrig217/EmperorRebornDE");
+  if (message == WM_COMMAND && HIWORD(wParam) == STN_CLICKED && reinterpret_cast<HWND>(lParam) == facebookLink) return onLinkClicked(hwnd, message, wParam, lParam, "https://github.com/badrig217/EmperorSpice");
 
   if (message == WM_COMMAND && HIWORD(wParam) == BN_CLICKED && reinterpret_cast<HWND>(lParam) == fullscreenCheckbox) return onFullscreenCheckboxClicked(hwnd, message, wParam, lParam);
   if (message == WM_COMMAND && HIWORD(wParam) == BN_CLICKED && reinterpret_cast<HWND>(lParam) == cutscene43Checkbox) return onCutscene43CheckboxClicked(hwnd, message, wParam, lParam);
+  if (message == WM_COMMAND && HIWORD(wParam) == BN_CLICKED && reinterpret_cast<HWND>(lParam) == graphicsPackCheckbox) return onGraphicsPackCheckboxClicked(hwnd, message, wParam, lParam);
   if (message == WM_COMMAND && HIWORD(wParam) == BN_CLICKED && reinterpret_cast<HWND>(lParam) == smoothScrollCheckbox) return onSmoothScrollCheckboxClicked(hwnd, message, wParam, lParam);
   if (message == WM_COMMAND && HIWORD(wParam) == CBN_SELCHANGE && reinterpret_cast<HWND>(lParam) == languageCombo) return onLanguageChanged(hwnd, message, wParam, lParam);
   if (message == WM_COMMAND && HIWORD(wParam) == CBN_SELCHANGE && reinterpret_cast<HWND>(lParam) == resolutionCombo) return onResolutionChanged(hwnd, message, wParam, lParam);
@@ -665,11 +699,11 @@ int wmain(int argc, wchar_t* argv[])
   }
 
   // Branding header banner (icon/launcher-header.bmp, generated by icon/generate_spice.py).
-  HWND headerPic = CreateWindowEx(0, WC_STATIC, nullptr, WS_CHILD | WS_VISIBLE | SS_BITMAP | SS_REALSIZECONTROL,
-                                  (clientW - S(514)) / 2, S(14), S(514), S(118), window, nullptr, nullptr, nullptr);
-  HBITMAP headerBmp = reinterpret_cast<HBITMAP>(LoadImageW(GetModuleHandleW(nullptr), MAKEINTRESOURCEW(IDB_HEADER), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION));
-  if (headerBmp)
-    SendMessageW(headerPic, STM_SETIMAGE, IMAGE_BITMAP, reinterpret_cast<LPARAM>(headerBmp));
+  // The bitmap is stored at 2x size and drawn scaled down with HALFTONE filtering (see WM_DRAWITEM),
+  // so the banner stays sharp at any Windows display scaling.
+  gHeaderPic = CreateWindowEx(0, WC_STATIC, nullptr, WS_CHILD | WS_VISIBLE | SS_OWNERDRAW,
+                              (clientW - S(514)) / 2, S(14), S(514), S(118), window, nullptr, nullptr, nullptr);
+  gHeaderBmp = reinterpret_cast<HBITMAP>(LoadImageW(GetModuleHandleW(nullptr), MAKEINTRESOURCEW(IDB_HEADER), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION));
 
   auto groupBox = [&](const wchar_t* text, int x, int y, int w, int h)
   {
@@ -678,7 +712,7 @@ int wmain(int argc, wchar_t* argv[])
 
   // --- Graphics (left) ---
   {
-    const int h = S(176);
+    const int h = S(204);
     groupBox(T(L"Graphics", L"Grafik"), colL, y0, colLW, h);
     int x = colL + S(14);
     int y = y0 + S(24);
@@ -698,6 +732,12 @@ int wmain(int argc, wchar_t* argv[])
     y += rowH;
 
     smoothScrollCheckbox = CreateWindowEx(0, WC_BUTTON, T(L"Smooth map scrolling", L"Fl\u00fcssiges Karten-Scrollen"), WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTOCHECKBOX, x, y, S(305), S(22), window, nullptr, nullptr, nullptr);
+    y += rowH;
+
+    // Greyed out when the launcher was built without the bundled graphics folder (developer builds).
+    graphicsPackCheckbox = CreateWindowEx(0, WC_BUTTON, T(L"Graphics pack (dgVoodoo + ReShade)", L"Grafik-Paket (dgVoodoo + ReShade)"), WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTOCHECKBOX, x, y, S(305), S(22), window, nullptr, nullptr, nullptr);
+    if (!graphicsPack::available(std::filesystem::path(getFolderThisExeIsIn()) / L"graphics"))
+      EnableWindow(graphicsPackCheckbox, FALSE);
   }
 
   // --- Language + Advanced (right) ---
@@ -709,7 +749,7 @@ int wmain(int argc, wchar_t* argv[])
     SendMessageW(languageCombo, CB_SETCURSEL, gLang == Lang::DE ? 1 : 0, 0);
 
     int gy = y0 + S(70);
-    groupBox(T(L"Troubleshooting", L"Fehlersuche"), colR, gy, colRW, S(106));
+    groupBox(T(L"Troubleshooting", L"Fehlersuche"), colR, gy, colRW, S(134));
     int x = colR + S(14);
     int y = gy + S(24);
     pauseOnStartupCheckbox = CreateWindowEx(0, WC_BUTTON, T(L"Pause on startup", L"Beim Start pausieren"), WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTOCHECKBOX, x, y, colRW - S(24), S(22), window, nullptr, nullptr, nullptr);
@@ -720,7 +760,7 @@ int wmain(int argc, wchar_t* argv[])
   }
 
   // --- Multiplayer (full width) ---
-  int mpY = y0 + S(188);
+  int mpY = y0 + S(216);
   {
     const int h = S(132);
     groupBox(L"Multiplayer", colL, mpY, clientW - S(32), h);
@@ -745,7 +785,7 @@ int wmain(int argc, wchar_t* argv[])
   int footY = playY + S(58);
   HWND versionLabel = CreateWindowEx(0, WC_STATIC, L"Emperor Spice v1.0", WS_CHILD | WS_VISIBLE, colL, footY, S(200), S(20), window, nullptr, nullptr, nullptr);
   githubLink = CreateWindowEx(0, WC_STATIC, T(L"Based on Emperor Reborn by azmawee", L"Basiert auf Emperor Reborn von azmawee"), WS_CHILD | WS_VISIBLE | SS_NOTIFY, colL, footY + S(22), S(330), S(20), window, nullptr, nullptr, nullptr);
-  facebookLink = CreateWindowEx(0, WC_STATIC, L"github.com/badrig217/EmperorRebornDE", WS_CHILD | WS_VISIBLE | SS_NOTIFY, colL, footY + S(42), S(330), S(20), window, nullptr, nullptr, nullptr);
+  facebookLink = CreateWindowEx(0, WC_STATIC, L"github.com/badrig217/EmperorSpice", WS_CHILD | WS_VISIBLE | SS_NOTIFY, colL, footY + S(42), S(330), S(20), window, nullptr, nullptr, nullptr);
   int clientH = footY + S(70);
 
   // Fonts: Segoe UI everywhere, semibold for the play button and the version line.
@@ -799,6 +839,14 @@ int wmain(int argc, wchar_t* argv[])
     // The fixed presets are all 4:3, which the game expects. Picking a low one avoids locking to
     // the (often very high) desktop resolution, which makes the in-game fonts unreadably small.
     writeGraphicsSettings(gameWidth, gameHeight);
+
+    // Install or remove the graphics pack (dgVoodoo2 + ReShade) in the game folder.
+    std::wstring packError = graphicsPack::apply(std::filesystem::path(getFolderThisExeIsIn()) / L"graphics",
+                                                 std::filesystem::path(installDirUnicode), settings.graphicsPack);
+    if (!packError.empty())
+      MessageBoxW(nullptr, (T(L"The graphics pack could not be set up - the game starts without it.\n\n",
+                              L"Das Grafik-Paket konnte nicht eingerichtet werden - das Spiel startet ohne.\n\n") + packError).c_str(),
+                  L"Emperor Spice", MB_OK | MB_ICONWARNING);
 
     createGlobalCommsFileMappingHandle();
 

@@ -50,6 +50,10 @@ public:
   // Launcher UI language: "de", "en", or empty (not chosen yet - follow the Windows language).
   std::string language;
 
+  // Emperor Spice graphics pack: dgVoodoo2 (16x texture filtering) + ReShade (SMAA, contrast, sharpening).
+  // The launcher copies the bundled files into the game folder when on, and removes them when off.
+  bool graphicsPack = true;
+
 public:
   void readSettings()
   {
@@ -120,6 +124,10 @@ public:
     if (languageTemp)
       language = *languageTemp;
 
+    std::optional<std::string> graphicsPackTemp = regReadString(key, "GraphicsPack");
+    if (graphicsPackTemp)
+      graphicsPack = *graphicsPackTemp == "1";
+
     RegCloseKey(key);
   }
 
@@ -143,6 +151,7 @@ public:
     regWriteString(key, "UpscaleToDesktop", upscaleToDesktop ? "1" : "0");
     regWriteString(key, "SmoothScroll", smoothScroll ? "1" : "0");
     regWriteString(key, "Language", language);
+    regWriteString(key, "GraphicsPack", graphicsPack ? "1" : "0");
 
     RegCloseKey(key);
   }
