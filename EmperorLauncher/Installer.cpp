@@ -23,20 +23,41 @@ void extractPatchExe(std::string path)
   // Copyright note: the official Westwood/EA v1.09 patch (EM109EN.EXE) is NOT
   // bundled with this program because it is copyrighted by EA/Westwood. The user
   // must supply their own copy by placing it next to the launcher executable.
-  std::string sourcePath = getExeDir() + "\\EM109EN.EXE";
+  //
+  // Both the English (EM109EN.EXE) and the German (EM109DE.EXE) v1.09 patch are accepted:
+  // applied to the respective CD install they produce a byte-identical Game.exe (same MD5),
+  // the language only lives in the data files. So the German patch works unchanged.
+  static const char* const patchNames[] = { "EM109EN.EXE", "EM109DE.EXE" };
 
-  while (!std::filesystem::exists(sourcePath))
+  std::string sourcePath;
+  while (true)
   {
+    for (const char* name : patchNames)
+    {
+      std::string candidate = getExeDir() + "\\" + name;
+      if (std::filesystem::exists(candidate))
+      {
+        sourcePath = candidate;
+        break;
+      }
+    }
+    if (!sourcePath.empty())
+      break;
+
     std::string message =
-      "The official Westwood/EA v1.09 patch is required but was not found.\n\n"
-      "Please place your own copy of EM109EN.EXE next to EmperorReborn.exe:\n\n    " +
-      sourcePath + "\n\n"
-      "This file is copyrighted by EA/Westwood and is not distributed with Emperor "
-      "Reborn. See README.txt for details.\n\n"
-      "Click OK after you have copied the file, or Cancel to quit.";
+      "Der offizielle Westwood/EA-Patch 1.09 wurde nicht gefunden.\n"
+      "The official Westwood/EA v1.09 patch was not found.\n\n"
+      "Bitte lege deine eigene EM109DE.EXE (deutsch) oder EM109EN.EXE (englisch)\n"
+      "neben EmperorReborn.exe in diesen Ordner:\n"
+      "Please place your own EM109DE.EXE (German) or EM109EN.EXE (English)\n"
+      "next to EmperorReborn.exe in this folder:\n\n    " +
+      getExeDir() + "\n\n"
+      "Die Datei ist urheberrechtlich geschuetzt (EA/Westwood) und wird nicht mitgeliefert.\n"
+      "This file is copyrighted by EA/Westwood and is not distributed with Emperor Reborn.\n\n"
+      "OK = erneut suchen / retry      Abbrechen = beenden / Cancel = quit";
 
     if (MessageBoxA(nullptr, message.c_str(),
-          "Emperor Reborn - EM109EN.EXE required",
+          "Emperor Reborn - Patch 1.09 benoetigt / required",
           MB_OKCANCEL | MB_ICONWARNING) == IDCANCEL)
       exit(1);
   }
