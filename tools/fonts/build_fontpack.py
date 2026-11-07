@@ -55,10 +55,13 @@ def render(ttf, chars, rowh, captop, capbot, texw):
         im = Image.new('L', (rowh * 3, rowh), 0)
         ImageDraw.Draw(im).text((rowh, base), ch, font=font, fill=255)
         a = np.asarray(im).copy()
-        a[a < 9] = 0                       # below one step of 16-bit colour: would vanish anyway
+        # Snap to 4-bit steps (multiples of 17): the original sheets only use values >= 16, so the
+        # game may well scan a 16-bit (4444) copy of the sheet. Every pixel we keep must survive that,
+        # otherwise a glyph could split into two runs and shift every following character.
+        a = (np.round(a / 17.0) * 17).astype(np.uint8)
         cols = np.where(a.any(0))[0]
         a = a[:, cols[0]:cols[-1] + 1]
-        a[rowh // 2, ~a.any(0)] = 9        # bridge inner gaps (e.g. '"') so the glyph stays one run
+        a[rowh // 2, ~a.any(0)] = 17       # bridge inner gaps (e.g. '"') so the glyph stays one run
         return a
 
     sheet = np.zeros((rowh * 32, texw), np.uint8)
@@ -94,11 +97,11 @@ def scan(sheet, rowh):
     return runs
 
 
-def tga555(sheet):
-    v = (sheet.astype(np.uint32) * 31 + 127) // 255
-    px = ((v << 10) | (v << 5) | v).astype('<u2')[::-1]   # bottom-up like the original sheets
+def tga32(sheet):
+    # 32-bit, alpha 255, bottom-up - the same layout as the original small0.tga / Standard.tga
     h, w = sheet.shape
-    return bytes([0, 0, 2]) + bytes(9) + struct.pack('<HH', w, h) + bytes([16, 0]) + px.tobytes()
+    px = np.dstack([sheet, sheet, sheet, np.full_like(sheet, 255)])[::-1]
+    return bytes([0, 0, 2]) + bytes(9) + struct.pack('<HH', w, h) + bytes([32, 0]) + px.tobytes()
 
 
 def write_archive(base, files):
@@ -117,11 +120,11 @@ def main(ttf, outdir):
     ui, tex = [], []
     for name, chars, rowh, captop, capbot, texw in FONTS:
         sheet, pos, size = render(ttf, chars, rowh, captop, capbot, texw)
-        quant = ((sheet.astype(np.uint32) * 31 + 127) // 255).astype(np.uint8)
-        runs = scan(quant, rowh)
-        assert runs[1:] == pos, f'{name}: glyph scan does not match the layout'
+        for bits in (4, 5, 8):  # the layout must hold whatever colour depth the game scans at
+            runs = scan(sheet >> (8 - bits), rowh)
+            assert runs[1:] == pos, f'{name}: glyph scan at {bits} bit does not match the layout'
         ui.append((f'FONT\\{name.upper()}.MAP', '﻿'.encode('utf-16-le') + chars.encode('utf-16-le')))
-        tex.append((f'Textures\\{name}.tga', tga555(sheet)))
+        tex.append((f'Textures\\{name}.tga', tga32(sheet)))
         Image.fromarray(sheet).save(os.path.join(outdir, name + '.png'))
         print(f'{name}: {len(chars)} glyphs, {sheet.shape[1]}x{sheet.shape[0]}, DejaVu Sans {size}px')
     write_archive(os.path.join(outdir, 'UI'), ui)
