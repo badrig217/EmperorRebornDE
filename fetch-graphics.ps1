@@ -1,69 +1,66 @@
 <#
 .SYNOPSIS
-  Downloads the third-party graphics components of the Emperor Spice graphics pack
-  (dgVoodoo2 + ReShade + shaders) from their official sources and assembles them in
-  build-graphics\graphics, ready to be packaged next to EmperorSpice.exe.
+  Assembles the Emperor Spice graphics pack (dgVoodoo2 + ReShade + shaders) in build-graphics/graphics,
+  ready to be packaged next to EmperorSpice.exe.
 
 .DESCRIPTION
-  Nothing third-party is committed to the repository. Each component is pinned to a fixed
-  version below - updating a component means changing one line. If a SHA256 is filled in,
-  the download is verified against it and the build fails on a mismatch; an empty hash only
-  prints the value (copy it in to pin the exact file).
+  No third-party program is committed to this repository. dgVoodoo2 and the ReShade setup are kept,
+  unmodified, as assets of the GitHub release "thirdparty-v1" of this repository (the official servers
+  remove old versions, so they cannot be pinned there). Every file is checked against its SHA256 below -
+  the build fails if anything differs. The shaders come from their official GitHub repositories,
+  pinned to a commit.
 
-  The dgVoodoo.conf is taken from the downloaded dgVoodoo package and only the few settings
-  Emperor needs are changed, so the file always matches the dgVoodoo version in use:
-    - Output API Direct3D 11, texture filtering forced to 16x anisotropic
-    - NO MSAA (Emperor hangs with dgVoodoo MSAA - anti-aliasing comes from ReShade SMAA instead)
-    - no dgVoodoo watermark
+  To update a component: attach the new file to a release, then change its line below
+  (file name + SHA256).
+
+  dgVoodoo.conf is taken from the dgVoodoo2 package and only these settings are changed:
+    - OutputAPI d3d11_fl10_1 (Direct3D 11, needed by ReShade)
+    - Filtering 16 (16x anisotropic texture filtering)
+    - Antialiasing appdriven = NO MSAA (Emperor hangs with dgVoodoo MSAA; ReShade SMAA is used instead)
+    - dgVoodooWatermark false
+
+.PARAMETER SourceDir
+  Use local copies of the release files instead of downloading them (for offline tests).
 #>
-param([string]$OutDir = (Join-Path $PSScriptRoot "build-graphics"))
+param(
+  [string]$OutDir = (Join-Path $PSScriptRoot "build-graphics"),
+  [string]$SourceDir = ""
+)
 
 $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
 
-# --- pinned versions (one line per component) ---------------------------------------------
-$DgVoodooMinVer = 0x287;                                                       $DgVoodooSha256 = ""   # min. 2.87
-$ReShadeUrl     = "https://reshade.me/downloads/ReShade_Setup_6.8.0.exe";      $ReShadeSha256  = ""
-$ShadersRepo    = "https://github.com/crosire/reshade-shaders";                $ShadersRef     = "slim"
-$SweetFxRepo    = "https://github.com/CeeJayDK/SweetFX";                       $SweetFxRef     = "master"
-# -------------------------------------------------------------------------------------------
+# --- pinned components (one line each) -------------------------------------------------------
+$ReleaseUrl = "https://github.com/badrig217/EmperorSpice/releases/download/thirdparty-v1"
+$DgVoodoo = @{ File = "dgVoodoo2_87_6.zip";      Sha256 = "9afa493396feec7108f42a2d97661eef96bbaac5addf0dfb5cfbc3001cd76a0a" }
+$ReShade  = @{ File = "ReShade_Setup_6.8.0.exe"; Sha256 = "207aea16205fbf952bc8fe1879966672454cf04002e7ad34237c7990a5b3c0b4" }
+$Shaders  = @{ Repo = "https://github.com/crosire/reshade-shaders"; Commit = "fd0022170615ce0d8162d219bff07232fa6dd84f" }
+$SweetFx  = @{ Repo = "https://github.com/CeeJayDK/SweetFX";        Commit = "93ddf39b357f5da534ed6d34ba4ec8cc7dcfa361" }
+# ----------------------------------------------------------------------------------------------
 
-# dgVoodoo2: the author's server only keeps the newest release (older zips are removed), so a fixed
-# version number cannot be downloaded later. We take the newest release via the author's own
-# "latest" link, require at least $DgVoodooMinVer and log the exact version + SHA256 of what got packaged.
-$DgVoodooUrls = @(
-  "https://dege.fw.hu/dgVoodoo2/dgVoodoo2_latest.zip",
-  "http://dege.fw.hu/dgVoodoo2/dgVoodoo2_latest.zip",
-  "http://dege.freeweb.hu/dgVoodoo2/dgVoodoo2_latest.zip"
-)
-
-function Get-Pinned([string[]]$urls, [string]$sha, [string]$dest) {
-  $ok = $false
-  foreach ($url in $urls) {
-    Write-Host "Downloading $url"
-    try {
-      Invoke-WebRequest -Uri $url -OutFile $dest -UseBasicParsing -UserAgent "Mozilla/5.0 (EmperorSpice build)"
-      $ok = $true; break
-    } catch { Write-Host "  failed: $($_.Exception.Message)" -ForegroundColor DarkYellow }
-  }
-  if (-not $ok) { throw "Could not download from any of: $($urls -join ', ')" }
-  $actual = (Get-FileHash $dest -Algorithm SHA256).Hash.ToLower()
-  if ($sha) {
-    if ($actual -ne $sha.ToLower()) { throw "SHA256 mismatch for $url`n  expected $sha`n  got      $actual" }
-    Write-Host "  SHA256 verified: $actual" -ForegroundColor Green
+function Get-Verified([hashtable]$item, [string]$dest) {
+  if ($SourceDir) {
+    Copy-Item (Join-Path $SourceDir $item.File) $dest
   } else {
-    Write-Host "  SHA256 (not pinned yet): $actual" -ForegroundColor Yellow
+    $url = "$ReleaseUrl/$($item.File)"
+    Write-Host "Downloading $url"
+    Invoke-WebRequest -Uri $url -OutFile $dest -UseBasicParsing
   }
+  $actual = (Get-FileHash $dest -Algorithm SHA256).Hash.ToLower()
+  if ($actual -ne $item.Sha256) { throw "SHA256 mismatch for $($item.File)`n  expected $($item.Sha256)`n  got      $actual" }
+  Write-Host "  $($item.File): SHA256 OK" -ForegroundColor Green
 }
 
 function Find-7Zip {
-  foreach ($p in @("$env:ProgramFiles\7-Zip\7z.exe", "${env:ProgramFiles(x86)}\7-Zip\7z.exe")) { if (Test-Path $p) { return $p } }
+  foreach ($p in @("$env:ProgramFiles\7-Zip\7z.exe", "${env:ProgramFiles(x86)}\7-Zip\7z.exe")) {
+    if ($p -and (Test-Path $p)) { return $p }
+  }
   $cmd = Get-Command 7z -ErrorAction SilentlyContinue
   if ($cmd) { return $cmd.Source }
   throw "7-Zip not found (needed to extract ReShade32.dll from the ReShade setup)."
 }
 
-# Change "Key = value" lines inside one [Section] of a dgVoodoo.conf; fails if a key is missing.
+# Change "Key = value" lines inside one [Section] of dgVoodoo.conf; fails if a key is missing.
 function Set-ConfValues([string[]]$lines, [string]$section, [hashtable]$values) {
   $current = ""
   $found = @{}
@@ -83,63 +80,65 @@ function Set-ConfValues([string[]]$lines, [string]$section, [hashtable]$values) 
 
 $work = Join-Path $OutDir "_work"
 $gfx  = Join-Path $OutDir "graphics"
+$lic  = Join-Path $gfx "licenses"
 if (Test-Path $OutDir) { Remove-Item $OutDir -Recurse -Force }
-New-Item -ItemType Directory -Path $work, $gfx, (Join-Path $gfx "licenses") -Force | Out-Null
+New-Item -ItemType Directory -Path $work, $gfx, $lic -Force | Out-Null
 
-# --- dgVoodoo2 -----------------------------------------------------------------------------
-$dgvZip = Join-Path $work "dgVoodoo2.zip"
-Get-Pinned $DgVoodooUrls $DgVoodooSha256 $dgvZip
+# --- dgVoodoo2 --------------------------------------------------------------------------------
+$dgvZip = Join-Path $work $DgVoodoo.File
+Get-Verified $DgVoodoo $dgvZip
 $dgvDir = Join-Path $work "dgVoodoo2"
 Expand-Archive $dgvZip -DestinationPath $dgvDir
-Copy-Item (Join-Path $dgvDir "MS\x86\DDraw.dll")   $gfx
-Copy-Item (Join-Path $dgvDir "MS\x86\D3DImm.dll")  $gfx
+$x86 = Join-Path (Join-Path $dgvDir "MS") "x86"
+Copy-Item (Join-Path $x86 "DDraw.dll")  $gfx
+Copy-Item (Join-Path $x86 "D3DImm.dll") $gfx
 $conf = Get-Content (Join-Path $dgvDir "dgVoodoo.conf")
-$verLine = $conf | Where-Object { $_ -match '^\s*Version\s*=\s*(0x[0-9a-fA-F]+)' } | Select-Object -First 1
-if (-not $verLine) { throw "dgVoodoo.conf: no Version line found" }
-$dgvVersion = [Convert]::ToInt32(($verLine -replace '.*=\s*0x', ''), 16)
-Write-Host ("  dgVoodoo2 version in package: 0x{0:X}" -f $dgvVersion)
-if ($dgvVersion -lt $DgVoodooMinVer) { throw ("dgVoodoo2 too old: 0x{0:X}, need at least 0x{1:X}" -f $dgvVersion, $DgVoodooMinVer) }
-$conf = Set-ConfValues $conf "General"  @{ "OutputAPI" = "d3d11_fl10_1" }
-$conf = Set-ConfValues $conf "DirectX"  @{ "Filtering" = "16"; "Antialiasing" = "appdriven"; "dgVoodooWatermark" = "false" }
+$conf = Set-ConfValues $conf "General" @{ "OutputAPI" = "d3d11_fl10_1" }
+$conf = Set-ConfValues $conf "DirectX" @{ "Filtering" = "16"; "Antialiasing" = "appdriven"; "dgVoodooWatermark" = "false" }
 Set-Content -Path (Join-Path $gfx "dgVoodoo.conf") -Value $conf -Encoding ascii
-Get-ChildItem $dgvDir -File | Where-Object { $_.Name -match '(?i)readme|license|\.url$' } | ForEach-Object {
-  Copy-Item $_.FullName (Join-Path $gfx "licenses\dgVoodoo2-$($_.Name)")
+Get-ChildItem (Join-Path $dgvDir "Doc") -File -ErrorAction SilentlyContinue | ForEach-Object {
+  Copy-Item $_.FullName (Join-Path $lic "dgVoodoo2-$($_.Name)")
 }
 
-# --- ReShade -------------------------------------------------------------------------------
-$rsExe = Join-Path $work "ReShade_Setup.exe"
-Get-Pinned @($ReShadeUrl) $ReShadeSha256 $rsExe
+# --- ReShade ----------------------------------------------------------------------------------
+$rsExe = Join-Path $work $ReShade.File
+Get-Verified $ReShade $rsExe
 $sevenZip = Find-7Zip
 & $sevenZip e $rsExe "ReShade32.dll" "-o$work" -y | Out-Null
 if (-not (Test-Path (Join-Path $work "ReShade32.dll"))) { throw "ReShade32.dll not found inside the ReShade setup." }
 Copy-Item (Join-Path $work "ReShade32.dll") $gfx
 
-# --- shaders (ReShade standard effects incl. SMAA, and SweetFX) -----------------------------
+# --- shaders (ReShade standard effects incl. SMAA, and SweetFX), pinned to a commit -------------
 $shaderOut = Join-Path $gfx "reshade-shaders"
-foreach ($src in @(@{ Repo = $ShadersRepo; Ref = $ShadersRef; Name = "reshade-shaders" },
-                   @{ Repo = $SweetFxRepo; Ref = $SweetFxRef; Name = "SweetFX" })) {
+foreach ($src in @(@{ Name = "reshade-shaders"; Repo = $Shaders.Repo; Commit = $Shaders.Commit },
+                   @{ Name = "SweetFX";         Repo = $SweetFx.Repo; Commit = $SweetFx.Commit })) {
   $dir = Join-Path $work $src.Name
-  git clone --depth 1 --branch $src.Ref $src.Repo $dir 2>&1 | Out-Null
-  if ($LASTEXITCODE -ne 0) { throw "git clone failed: $($src.Repo)" }
-  $commit = (git -C $dir rev-parse HEAD).Trim()
-  Write-Host "  $($src.Name) @ $($src.Ref) = $commit"
+  git init -q $dir
+  git -C $dir fetch -q --depth 1 $src.Repo $src.Commit
+  if ($LASTEXITCODE -ne 0) { throw "git fetch failed: $($src.Repo) $($src.Commit)" }
+  git -C $dir checkout -q FETCH_HEAD
   foreach ($sub in @("Shaders", "Textures")) {
     $from = Join-Path $dir $sub
-    if (Test-Path $from) { Copy-Item $from (Join-Path $shaderOut $sub) -Recurse -Force }
+    if (Test-Path $from) {
+      $to = Join-Path $shaderOut $sub
+      New-Item -ItemType Directory -Path $to -Force | Out-Null
+      Copy-Item (Join-Path $from "*") $to -Recurse -Force
+    }
   }
-  foreach ($lic in @("LICENSE", "LICENSE.md", "LICENSE.txt", "README.md")) {
-    $p = Join-Path $dir $lic
-    if (Test-Path $p) { Copy-Item $p (Join-Path $gfx "licenses\$($src.Name)-$lic") }
+  foreach ($name in @("LICENSE", "LICENSE.md", "LICENSE.txt")) {
+    $p = Join-Path $dir $name
+    if (Test-Path $p) { Copy-Item $p (Join-Path $lic "$($src.Name)-$name") }
   }
+  Write-Host "  $($src.Name) @ $($src.Commit)"
 }
-foreach ($fx in @("SMAA.fx", "Curves.fx", "Vibrance.fx", "LumaSharpen.fx")) {
-  if (-not (Get-ChildItem $shaderOut -Recurse -Filter $fx)) { throw "Shader $fx missing after download." }
+foreach ($fx in @("SMAA.fx", "Curves.fx", "Vibrance.fx", "LumaSharpen.fx", "ReShade.fxh")) {
+  if (-not (Get-ChildItem $shaderOut -Recurse -Filter $fx)) { throw "Shader file $fx missing." }
 }
 
-# --- our own config ------------------------------------------------------------------------
-Copy-Item (Join-Path $PSScriptRoot "graphics\ReShade.ini")        $gfx
-Copy-Item (Join-Path $PSScriptRoot "graphics\Emperor_Modern.ini") $gfx
+# --- our own config ---------------------------------------------------------------------------
+$ours = Join-Path $PSScriptRoot "graphics"
+Copy-Item (Join-Path $ours "ReShade.ini")        $gfx
+Copy-Item (Join-Path $ours "Emperor_Modern.ini") $gfx
 
 Remove-Item $work -Recurse -Force
 Write-Host "Graphics pack ready: $gfx" -ForegroundColor Green
-Get-ChildItem $gfx | Select-Object Name, @{N="KB";E={[math]::Round($_.Length/1KB,1)}} | Format-Table -AutoSize
