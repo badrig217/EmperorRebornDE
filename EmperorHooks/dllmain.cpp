@@ -73,7 +73,12 @@ void setupConsole()
 static void loadReShade()
 {
   if (GetFileAttributesA("ReShade32.dll") == INVALID_FILE_ATTRIBUTES)
+  {
+    char cwd[MAX_PATH] = {};
+    GetCurrentDirectoryA(MAX_PATH, cwd);
+    Log("ReShade: no ReShade32.dll in %s (optional)\n", cwd);
     return;
+  }
 
   char fullPath[MAX_PATH] = {};
   GetFullPathNameA("ReShade32.dll", MAX_PATH, fullPath, nullptr);
