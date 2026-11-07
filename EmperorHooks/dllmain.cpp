@@ -65,6 +65,23 @@ void setupConsole()
   }
 }
 
+// Optional ReShade support. With a DirectX wrapper such as dgVoodoo2 the usual ReShade proxy DLLs
+// (dxgi.dll / d3d11.dll in the game folder) are not picked up, because the wrapper talks to the system
+// Direct3D 11 directly. Loading ReShade32.dll into the process ourselves - the same thing ReShade's own
+// injector does - lets it install its hooks before the wrapper creates its Direct3D 11 device.
+// Only happens if the user put ReShade32.dll next to Game.exe; otherwise nothing changes.
+static void loadReShade()
+{
+  if (GetFileAttributesA("ReShade32.dll") == INVALID_FILE_ATTRIBUTES)
+    return;
+
+  char fullPath[MAX_PATH] = {};
+  GetFullPathNameA("ReShade32.dll", MAX_PATH, fullPath, nullptr);
+  HMODULE reshade = LoadLibraryA(fullPath);
+  Log("ReShade: loading %s -> %s (error %lu)\n", fullPath, reshade ? "OK" : "FAILED",
+    reshade ? 0ul : (unsigned long)GetLastError());
+}
+
 void runHooks()
 {
   Settings settings;
@@ -76,6 +93,8 @@ void runHooks()
   SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE);
 
   setupConsole();
+
+  loadReShade();
 
   DetourTransactionBegin();
   DetourUpdateThread(GetCurrentThread());
