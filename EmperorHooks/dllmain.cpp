@@ -13,6 +13,7 @@
 #include "SmoothScroll.hpp"
 #include "WrapWinsock.hpp"
 #include "Log.hpp"
+#include "MoneyCheat.hpp"
 #include "PatchWol.hpp"
 #include "Error.hpp"
 #include <optional>
@@ -125,6 +126,9 @@ void runHooks()
   // Framerate-normalized smooth map scrolling. Independent of widescreen, so it is installed here on its
   // own setting. Patches Game.exe once; the per-frame multiplier is driven from EndScene.
   initSmoothScroll(settings.smoothScroll);
+
+  // Optional single-player money cheat (polled from EndScene).
+  initMoneyCheat(settings.moneyCheat);
 
   // In-game 2D HUD/sidebar widescreen fix, applied to the loaded image. Capture the vanilla bytes now;
   // it is toggled on ONLY while in a mission (see PickingTracer) so the front-end menu stays

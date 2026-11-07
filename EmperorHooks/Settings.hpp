@@ -54,6 +54,9 @@ public:
   // The launcher copies the bundled files into the game folder when on, and removes them when off.
   bool graphicsPack = true;
 
+  // Single-player money cheat (Ctrl+Shift+G = +25,000 credits). Off by default, never active in multiplayer.
+  bool moneyCheat = false;
+
 public:
   void readSettings()
   {
@@ -128,6 +131,10 @@ public:
     if (graphicsPackTemp)
       graphicsPack = *graphicsPackTemp == "1";
 
+    std::optional<std::string> moneyCheatTemp = regReadString(key, "MoneyCheat");
+    if (moneyCheatTemp)
+      moneyCheat = *moneyCheatTemp == "1";
+
     RegCloseKey(key);
   }
 
@@ -152,6 +159,7 @@ public:
     regWriteString(key, "SmoothScroll", smoothScroll ? "1" : "0");
     regWriteString(key, "Language", language);
     regWriteString(key, "GraphicsPack", graphicsPack ? "1" : "0");
+    regWriteString(key, "MoneyCheat", moneyCheat ? "1" : "0");
 
     RegCloseKey(key);
   }

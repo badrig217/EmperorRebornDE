@@ -26,8 +26,9 @@
 - **Flüssiges Karten-Scrollen**, Zwischensequenzen wahlweise im Originalformat 4:3.
 - **Multiplayer** über direkte IP-Verbindung (der alte Westwood-Online-Server existiert nicht mehr).
 - **Desktop-Verknüpfung** wird nach der Installation automatisch angelegt.
+- **Geld-Cheat** (optional, nur Einzelspieler): im Launcher unter „Extras“ einschalten, dann gibt **Strg+Umschalt+G** im Spiel +25.000 Credits. Im Multiplayer ist er gesperrt.
 
-In Arbeit: Geld-Cheat für den Einzelspieler, Installation direkt aus ISO-Dateien.
+In Arbeit: Installation direkt aus ISO-Dateien.
 
 ![Launcher](screenshots/launcher-de.png)
 
@@ -87,8 +88,9 @@ Deine Änderungen im ReShade-Menü bleiben erhalten. Ohne Haken entfernt der Lau
 - **Smooth map scrolling**, cutscenes optionally in their original 4:3.
 - **Multiplayer** via direct IP (the old Westwood Online servers are gone).
 - **Desktop shortcut** is created after installation.
+- **Money cheat** (optional, single player only): enable it under "Extras" in the launcher, then **Ctrl+Shift+G** adds 25,000 credits. Disabled in multiplayer.
 
-Work in progress: money cheat for single player, installing directly from ISO files.
+Work in progress: installing directly from ISO files.
 
 ### Requirements
 

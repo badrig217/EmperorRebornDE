@@ -316,6 +316,7 @@ HWND smoothScrollCheckbox = nullptr;
 HWND languageCombo = nullptr;
 HWND graphicsPackCheckbox = nullptr;
 HWND shortcutButton = nullptr;
+HWND moneyCheatCheckbox = nullptr;
 
 // Command line argument (custom install dir) we were started with, so a language switch can restart us identically.
 std::wstring gInstallDirArg;
@@ -362,6 +363,7 @@ void loadAndApplySettings()
   SendMessageA(cutscene43Checkbox, BM_SETCHECK, settings.cutscene43 ? BST_CHECKED : BST_UNCHECKED, 0);
   SendMessageA(smoothScrollCheckbox, BM_SETCHECK, settings.smoothScroll ? BST_CHECKED : BST_UNCHECKED, 0);
   SendMessageA(graphicsPackCheckbox, BM_SETCHECK, settings.graphicsPack ? BST_CHECKED : BST_UNCHECKED, 0);
+  SendMessageA(moneyCheatCheckbox, BM_SETCHECK, settings.moneyCheat ? BST_CHECKED : BST_UNCHECKED, 0);
 
   refreshDerivedState();
 }
@@ -402,6 +404,13 @@ LRESULT onSmoothScrollCheckboxClicked(HWND hwnd, UINT message, WPARAM wParam, LP
 LRESULT onGraphicsPackCheckboxClicked(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
   settings.graphicsPack = SendMessage(graphicsPackCheckbox, BM_GETCHECK, 0, 0) == BST_CHECKED;
+  settings.writeSettings();
+  return CallWindowProc(defWndProc, hwnd, message, wParam, lParam);
+}
+
+LRESULT onMoneyCheatCheckboxClicked(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+  settings.moneyCheat = SendMessage(moneyCheatCheckbox, BM_GETCHECK, 0, 0) == BST_CHECKED;
   settings.writeSettings();
   return CallWindowProc(defWndProc, hwnd, message, wParam, lParam);
 }
@@ -563,6 +572,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
   if (message == WM_COMMAND && HIWORD(wParam) == BN_CLICKED && reinterpret_cast<HWND>(lParam) == pauseOnStartupCheckbox) return onPauseOnStartupCheckboxClicked(hwnd, message, wParam, lParam);
   if (message == WM_COMMAND && HIWORD(wParam) == BN_CLICKED && reinterpret_cast<HWND>(lParam) == forceCursorVisibleCheckbox) return onForceCursorVisibleCheckboxClicked(hwnd, message, wParam, lParam);
   if (message == WM_COMMAND && HIWORD(wParam) == BN_CLICKED && reinterpret_cast<HWND>(lParam) == disableCursorCaptureCheckbox) return onDisableCursorCaptureCheckboxClicked(hwnd, message, wParam, lParam);
+  if (message == WM_COMMAND && HIWORD(wParam) == BN_CLICKED && reinterpret_cast<HWND>(lParam) == moneyCheatCheckbox) return onMoneyCheatCheckboxClicked(hwnd, message, wParam, lParam);
   if (message == WM_COMMAND && HIWORD(wParam) == BN_CLICKED && reinterpret_cast<HWND>(lParam) == shortcutButton) return OnShortcutClicked(hwnd, message, wParam, lParam);
   if (message == WM_COMMAND && HIWORD(wParam) == BN_CLICKED && reinterpret_cast<HWND>(lParam) == testNetworkButton) return OnTestNetworkClicked(hwnd, message, wParam, lParam);
 
@@ -799,12 +809,15 @@ int wmain(int argc, wchar_t* argv[])
   // --- Extras (full width) ---
   int exY = mpY + S(144);
   {
-    groupBox(L"Extras", colL, exY, clientW - S(32), S(66));
-    shortcutButton = CreateWindowEx(0, WC_BUTTON, T(L"Create desktop shortcut", L"Desktop-Verkn\u00fcpfung erstellen"), WS_CHILD | WS_VISIBLE | WS_TABSTOP, colL + S(14), exY + S(24), S(230), S(28), window, nullptr, nullptr, nullptr);
+    groupBox(L"Extras", colL, exY, clientW - S(32), S(98));
+    moneyCheatCheckbox = CreateWindowEx(0, WC_BUTTON, T(L"Money cheat in single player:  Ctrl+Shift+G = +25,000 credits",
+                                                        L"Geld-Cheat im Einzelspieler:  Strg+Umschalt+G = +25.000 Credits"),
+                                        WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTOCHECKBOX, colL + S(14), exY + S(24), S(490), S(22), window, nullptr, nullptr, nullptr);
+    shortcutButton = CreateWindowEx(0, WC_BUTTON, T(L"Create desktop shortcut", L"Desktop-Verkn\u00fcpfung erstellen"), WS_CHILD | WS_VISIBLE | WS_TABSTOP, colL + S(14), exY + S(56), S(230), S(28), window, nullptr, nullptr, nullptr);
   }
 
   // --- Play button ---
-  int playY = exY + S(80);
+  int playY = exY + S(112);
   playButton = CreateWindowEx(0, WC_BUTTON, T(L"Play", L"Spielen"), WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_DEFPUSHBUTTON, (clientW - S(200)) / 2, playY, S(200), S(42), window, nullptr, nullptr, nullptr);
 
   // --- Footer: version + credits (links open in the browser) ---
