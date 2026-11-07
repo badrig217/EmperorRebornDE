@@ -29,9 +29,10 @@ $SweetFxRepo    = "https://github.com/CeeJayDK/SweetFX";                       $
 # -------------------------------------------------------------------------------------------
 
 # dgVoodoo2 is published on the author's GitHub releases and his own server; try the official locations in order.
-$v = $DgVoodooVer -replace '\.', '_'
+$v = ($DgVoodooVer -replace '^2\.', '') -replace '\.', '_'   # 2.87.2 -> 87_2
 $DgVoodooUrls = @(
   "https://github.com/dege-diosg/dgVoodoo2/releases/download/v$DgVoodooVer/dgVoodoo2_$v.zip",
+  "https://dege.fw.hu/dgVoodoo2/bin/dgVoodoo2_$v.zip",
   "http://dege.fw.hu/dgVoodoo2/bin/dgVoodoo2_$v.zip",
   "http://dege.freeweb.hu/dgVoodoo2/bin/dgVoodoo2_$v.zip"
 )
