@@ -41,6 +41,40 @@ namespace iso
       return extractDir(root_, destDir, L"", progress, 0);
     }
 
+    // True if a file exists at relPath (backslash separated, case-insensitive), e.g. L"INSTALL\\Game1.cab".
+    bool fileExists(const std::wstring& relPath)
+    {
+      if (!valid_)
+        return false;
+      Entry current = root_;
+      size_t start = 0;
+      while (true)
+      {
+        size_t sep = relPath.find(L'\\', start);
+        std::wstring part = relPath.substr(start, sep == std::wstring::npos ? std::wstring::npos : sep - start);
+        std::vector<Entry> entries;
+        if (!listDir(current, entries))
+          return false;
+        bool found = false;
+        for (auto& e : entries)
+        {
+          if (_wcsicmp(e.name.c_str(), part.c_str()) == 0)
+          {
+            if (sep == std::wstring::npos)
+              return !e.directory;
+            if (!e.directory)
+              return false;
+            current = e;
+            found = true;
+            break;
+          }
+        }
+        if (!found)
+          return false;
+        start = sep + 1;
+      }
+    }
+
   private:
     FILE* f_ = nullptr;
     bool valid_ = false;
@@ -203,6 +237,21 @@ namespace iso
       return true;
     }
   };
+
+  // Which Emperor disc an image is: "EMPEROR1".."EMPEROR4" when both the volume label and the content
+  // match (disc 1 has INSTALL\\Game1.cab, discs 2-4 have MOVIES0001.RFD), otherwise "".
+  inline std::string emperorDisc(const std::filesystem::path& path)
+  {
+    Image img(path);
+    if (!img.valid())
+      return "";
+    const std::string& label = img.volumeLabel();
+    if (label == "EMPEROR1")
+      return img.fileExists(L"INSTALL\\Game1.cab") ? label : "";
+    if (label == "EMPEROR2" || label == "EMPEROR3" || label == "EMPEROR4")
+      return img.fileExists(L"MOVIES0001.RFD") ? label : "";
+    return "";
+  }
 
   // Label (volume name) of an ISO image, or "" if the file is not a readable ISO 9660 image.
   inline std::string volumeLabel(const std::filesystem::path& path)

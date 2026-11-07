@@ -6,6 +6,8 @@
 #include <string>
 #include <CommCtrl.h>
 #include <map>
+#include <algorithm>
+#include <cwctype>
 #include <optional>
 #include <iterator>
 #include "../EmperorHooks/Settings.hpp"
@@ -614,6 +616,33 @@ std::string getMd5OfFile(const std::string& path)
 }
 
 
+// Adds every .iso in the given folders whose volume label is one of the four Emperor discs and that is
+// not assigned yet. So picking a single image is enough when all four lie in the same folder.
+void addIsoImagesFromFolders(const std::vector<std::wstring>& files, std::map<std::string, std::wstring>& images)
+{
+  std::vector<std::filesystem::path> folders;
+  for (const std::wstring& file : files)
+  {
+    std::filesystem::path folder = std::filesystem::path(file).parent_path();
+    if (std::find(folders.begin(), folders.end(), folder) == folders.end())
+      folders.push_back(folder);
+  }
+  for (const auto& folder : folders)
+  {
+    std::error_code ec;
+    for (const auto& entry : std::filesystem::directory_iterator(folder, ec))
+    {
+      std::wstring ext = entry.path().extension().wstring();
+      for (auto& c : ext) c = towlower(c);
+      if (!entry.is_regular_file(ec) || ext != L".iso")
+        continue;
+      std::string label = iso::emperorDisc(entry.path());
+      if (!label.empty() && !images.count(label))
+        images[label] = entry.path().wstring();
+    }
+  }
+}
+
 // Lets the player pick the ISO images of the 4 discs. Each file is identified by its volume label
 // (EMPEROR1..EMPEROR4), so the order and file names do not matter. Discs without an image are read
 // from a CD drive later. Returns false if the player cancelled.
@@ -627,7 +656,8 @@ bool selectIsoImages(std::map<std::string, std::wstring>& images)
     ofn.lpstrFilter = L"ISO (*.iso)\0*.iso\0*.*\0*.*\0\0";
     ofn.lpstrFile = buffer.data();
     ofn.nMaxFile = DWORD(buffer.size());
-    ofn.lpstrTitle = T(L"Select the ISO images of discs 1-4", L"ISO-Abbilder der CDs 1-4 ausw\u00e4hlen");
+    ofn.lpstrTitle = T(L"Select an ISO image of the game (the other discs in the same folder are found automatically)",
+                       L"Ein ISO-Abbild des Spiels ausw\u00e4hlen (die anderen CDs im selben Ordner werden automatisch gefunden)");
     ofn.Flags = OFN_ALLOWMULTISELECT | OFN_EXPLORER | OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_HIDEREADONLY;
     if (!GetOpenFileNameW(&ofn))
       return false;
@@ -646,12 +676,13 @@ bool selectIsoImages(std::map<std::string, std::wstring>& images)
     std::wstring unknown;
     for (const std::wstring& file : files)
     {
-      std::string label = iso::volumeLabel(std::filesystem::path(file));
-      if (label == "EMPEROR1" || label == "EMPEROR2" || label == "EMPEROR3" || label == "EMPEROR4")
+      std::string label = iso::emperorDisc(std::filesystem::path(file));
+      if (!label.empty())
         images[label] = file;
       else
         unknown += L"\n  " + std::filesystem::path(file).filename().wstring();
     }
+    addIsoImagesFromFolders(files, images);
 
     std::wstring summary;
     for (int i = 1; i <= 4; i++)
