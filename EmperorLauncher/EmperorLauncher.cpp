@@ -18,6 +18,10 @@
 #include "resource.h"
 #include "Lang.hpp"
 
+// Modern Windows look for buttons, checkboxes and combo boxes (Common Controls v6). Without this the
+// launcher's controls are drawn in the Windows 95 style.
+#pragma comment(linker, "\"/manifestdependency:type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
+
 
 HANDLE globalCommsFileMappingHandle = nullptr;
 HANDLE globalCommsHandleMutex = nullptr;
@@ -231,6 +235,45 @@ const Resolution resolutions[] =
 WNDPROC defWndProc = nullptr;
 HWND window = nullptr;
 
+// --- Look & feel ---------------------------------------------------------------------------------
+UINT gDpi = 96;
+inline int S(int v) { return MulDiv(v, int(gDpi), 96); } // scale 96-DPI layout pixels to the system DPI
+
+HFONT gUiFont = nullptr;
+HFONT gLinkFont = nullptr;
+int gHeaderBandHeight = 0;
+HBRUSH gBackgroundBrush = CreateSolidBrush(RGB(250, 249, 247));
+const COLORREF gTextColor = RGB(32, 32, 32);
+const COLORREF gLinkColor = RGB(180, 90, 20);
+
+HFONT makeFont(int pointSize, int weight, bool underline = false)
+{
+  return CreateFontW(-MulDiv(pointSize, int(gDpi), 72), 0, 0, 0, weight, FALSE, underline, FALSE, DEFAULT_CHARSET,
+                     OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH, L"Segoe UI");
+}
+
+BOOL CALLBACK setFontOnChild(HWND child, LPARAM font)
+{
+  SendMessageW(child, WM_SETFONT, static_cast<WPARAM>(font), TRUE);
+  return TRUE;
+}
+
+// Light window body with a dark band behind the header banner (same gradient as the banner itself).
+void paintBackground(HWND hwnd, HDC dc)
+{
+  RECT rc;
+  GetClientRect(hwnd, &rc);
+  FillRect(dc, &rc, gBackgroundBrush);
+  for (int y = 0; y < gHeaderBandHeight; y++)
+  {
+    float t = float(y) / float(std::max(1, gHeaderBandHeight - 1));
+    HBRUSH b = CreateSolidBrush(RGB(int(30 - 18 * t), int(20 - 11 * t), int(16 - 8 * t)));
+    RECT line = { rc.left, y, rc.right, y + 1 };
+    FillRect(dc, &line, b);
+    DeleteObject(b);
+  }
+}
+
 HWND fullscreenCheckbox = nullptr;
 HWND resolutionCombo = nullptr;
 HWND hostGameRadio = nullptr;
@@ -435,10 +478,33 @@ LRESULT onLinkClicked(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam, con
 }
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
+  if (hwnd == window && message == WM_ERASEBKGND)
+  {
+    paintBackground(hwnd, reinterpret_cast<HDC>(wParam));
+    return 1;
+  }
+  if (hwnd == window && (message == WM_CTLCOLORSTATIC || message == WM_CTLCOLORBTN))
+  {
+    HDC dc = reinterpret_cast<HDC>(wParam);
+    HWND control = reinterpret_cast<HWND>(lParam);
+    SetBkMode(dc, TRANSPARENT);
+    SetTextColor(dc, (control == githubLink || control == facebookLink) ? gLinkColor : gTextColor);
+    return reinterpret_cast<LRESULT>(gBackgroundBrush);
+  }
+  if (hwnd == window && message == WM_SETCURSOR)
+  {
+    HWND over = reinterpret_cast<HWND>(wParam);
+    if (over == githubLink || over == facebookLink)
+    {
+      SetCursor(LoadCursor(nullptr, IDC_HAND));
+      return TRUE;
+    }
+  }
+
   if (message == WM_CLOSE && hwnd == window) return OnWindowClose(hwnd, message, wParam, lParam);
 
-  if (message == WM_COMMAND && HIWORD(wParam) == STN_CLICKED && reinterpret_cast<HWND>(lParam) == githubLink) return onLinkClicked(hwnd, message, wParam, lParam, "https://github.com/azmawee");
-  if (message == WM_COMMAND && HIWORD(wParam) == STN_CLICKED && reinterpret_cast<HWND>(lParam) == facebookLink) return onLinkClicked(hwnd, message, wParam, lParam, "https://facebook.com/azmawee");
+  if (message == WM_COMMAND && HIWORD(wParam) == STN_CLICKED && reinterpret_cast<HWND>(lParam) == githubLink) return onLinkClicked(hwnd, message, wParam, lParam, "https://github.com/azmawee/EmperorReborn");
+  if (message == WM_COMMAND && HIWORD(wParam) == STN_CLICKED && reinterpret_cast<HWND>(lParam) == facebookLink) return onLinkClicked(hwnd, message, wParam, lParam, "https://github.com/badrig217/EmperorRebornDE");
 
   if (message == WM_COMMAND && HIWORD(wParam) == BN_CLICKED && reinterpret_cast<HWND>(lParam) == fullscreenCheckbox) return onFullscreenCheckboxClicked(hwnd, message, wParam, lParam);
   if (message == WM_COMMAND && HIWORD(wParam) == BN_CLICKED && reinterpret_cast<HWND>(lParam) == cutscene43Checkbox) return onCutscene43CheckboxClicked(hwnd, message, wParam, lParam);
@@ -492,6 +558,10 @@ std::string getMd5OfFile(const std::string& path)
 int wmain(int argc, wchar_t* argv[])
 {
   std::wstring installDirUnicode;
+  // Crisp rendering on scaled displays: lay out in real pixels for the system DPI.
+  SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_SYSTEM_AWARE);
+  gDpi = GetDpiForSystem();
+
   // Pick the UI language first, so every message from here on (installer included) is translated.
   settings.readSettings();
   gLang = languageFromSetting(settings.language);
@@ -574,13 +644,19 @@ int wmain(int argc, wchar_t* argv[])
   SetCurrentDirectoryA(installDir.c_str());
 
   // main window
-  int width = 550;
-  int height = 700;
-  int left = GetSystemMetrics(SM_CXSCREEN) / 2 - width / 2;
-  int top = GetSystemMetrics(SM_CYSCREEN) / 2 - height / 2;
-  window = CreateWindowEx(0, WC_DIALOG, L"Emperor Reborn", WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU, left, top, width, height, nullptr, nullptr, nullptr, nullptr);
+  // Layout is written in 96-DPI pixels and scaled with S() for the system DPI, so the launcher stays
+  // crisp (not bitmap-stretched) on displays with Windows scaling above 100%.
+  const int clientW = S(560);
+  const int y0 = S(158);          // below the header band
+  const int colL = S(16), colLW = S(330);
+  const int colR = S(356), colRW = S(188);
+  const int rowH = S(26);
 
-  // Our own emblem (icon/EmperorReborn.ico, embedded via Resources.rc) on the title bar and taskbar.
+  RECT wr = { 0, 0, clientW, S(600) };
+  window = CreateWindowEx(0, WC_DIALOG, L"Emperor Spice", WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
+                          0, 0, 100, 100, nullptr, nullptr, nullptr, nullptr);
+
+  // Our own emblem (icon/EmperorSpice.ico, embedded via Resources.rc) on the title bar and taskbar.
   HICON appIcon = LoadIconW(GetModuleHandleW(nullptr), MAKEINTRESOURCEW(IDI_APPICON));
   if (appIcon)
   {
@@ -588,116 +664,107 @@ int wmain(int argc, wchar_t* argv[])
     SendMessageW(window, WM_SETICON, ICON_SMALL, reinterpret_cast<LPARAM>(appIcon));
   }
 
-  // Branding header banner across the top (icon/launcher-header.bmp, embedded via Resources.rc).
-  HWND headerPic = CreateWindowEx(0, WC_STATIC, nullptr, WS_CHILD | WS_VISIBLE | SS_BITMAP, 12, 12, 514, 118, window, nullptr, nullptr, nullptr);
+  // Branding header banner (icon/launcher-header.bmp, generated by icon/generate_spice.py).
+  HWND headerPic = CreateWindowEx(0, WC_STATIC, nullptr, WS_CHILD | WS_VISIBLE | SS_BITMAP | SS_REALSIZECONTROL,
+                                  (clientW - S(514)) / 2, S(14), S(514), S(118), window, nullptr, nullptr, nullptr);
   HBITMAP headerBmp = reinterpret_cast<HBITMAP>(LoadImageW(GetModuleHandleW(nullptr), MAKEINTRESOURCEW(IDB_HEADER), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION));
   if (headerBmp)
     SendMessageW(headerPic, STM_SETIMAGE, IMAGE_BITMAP, reinterpret_cast<LPARAM>(headerBmp));
 
-  int ySpace = 30;
-  int headerH = 140;   // vertical space reserved for the header banner above the columns
-  int yMax = 0;
-
-  // left side
+  auto groupBox = [&](const wchar_t* text, int x, int y, int w, int h)
   {
-    int y = ySpace + headerH;
-    int x = 30;
+    return CreateWindowEx(0, WC_BUTTON, text, WS_CHILD | WS_VISIBLE | BS_GROUPBOX, x, y, w, h, window, nullptr, nullptr, nullptr);
+  };
 
-    CreateWindowEx(0, WC_STATIC, T(L"Settings", L"Einstellungen"), WS_CHILD | WS_VISIBLE, x, y, 200, 24, window, nullptr, nullptr, nullptr);
-    y += ySpace;
+  // --- Graphics (left) ---
+  {
+    const int h = S(176);
+    groupBox(T(L"Graphics", L"Grafik"), colL, y0, colLW, h);
+    int x = colL + S(14);
+    int y = y0 + S(24);
 
-    fullscreenCheckbox = CreateWindowEx(0, WC_BUTTON, T(L"Fullscreen", L"Vollbild"), WS_CHILD | BS_AUTOCHECKBOX | WS_VISIBLE, x, y, 140, 24, window, nullptr, nullptr, nullptr);
-    y += ySpace;
+    fullscreenCheckbox = CreateWindowEx(0, WC_BUTTON, T(L"Fullscreen", L"Vollbild"), WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTOCHECKBOX, x, y, S(290), S(22), window, nullptr, nullptr, nullptr);
+    y += rowH + S(4);
 
-    CreateWindowEx(0, WC_STATIC, T(L"Resolution", L"Aufl\u00f6sung"), WS_CHILD | WS_VISIBLE, x, y + 4, 80, 24, window, nullptr, nullptr, nullptr);
+    CreateWindowEx(0, WC_STATIC, T(L"Resolution", L"Auflösung"), WS_CHILD | WS_VISIBLE, x, y + S(4), S(90), S(22), window, nullptr, nullptr, nullptr);
     // The height here also controls how tall the drop-down list is, so make it big enough for all entries.
-    resolutionCombo = CreateWindowEx(0, WC_COMBOBOX, nullptr, WS_CHILD | WS_VISIBLE | CBS_DROPDOWNLIST | WS_VSCROLL, x + 90, y, 200, 240, window, nullptr, nullptr, nullptr);
+    resolutionCombo = CreateWindowEx(0, WC_COMBOBOX, nullptr, WS_CHILD | WS_VISIBLE | WS_TABSTOP | CBS_DROPDOWNLIST | WS_VSCROLL, x + S(96), y, S(206), S(320), window, nullptr, nullptr, nullptr);
     for (const Resolution& res : resolutions)
       SendMessageW(resolutionCombo, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(T(res.label, res.labelDe)));
-    // Make the drop-down list itself wider than the box so the longer "(widescreen)" labels are not clipped.
-    SendMessageW(resolutionCombo, CB_SETDROPPEDWIDTH, 230, 0);
-    y += ySpace;
+    SendMessageW(resolutionCombo, CB_SETDROPPEDWIDTH, S(240), 0);
+    y += rowH + S(10);
 
-    cutscene43Checkbox = CreateWindowEx(0, WC_BUTTON, T(L"Cutscene movies / FMV in 4:3 (black bars)", L"Zwischensequenzen in 4:3 (schwarze R\u00e4nder)"), WS_CHILD | BS_AUTOCHECKBOX | WS_VISIBLE, x, y, 290, 24, window, nullptr, nullptr, nullptr);
-    y += ySpace;
+    cutscene43Checkbox = CreateWindowEx(0, WC_BUTTON, T(L"Cutscene movies / FMV in 4:3 (black bars)", L"Zwischensequenzen in 4:3 (schwarze Ränder)"), WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTOCHECKBOX, x, y, S(305), S(22), window, nullptr, nullptr, nullptr);
+    y += rowH;
 
-    smoothScrollCheckbox = CreateWindowEx(0, WC_BUTTON, T(L"Smooth map scrolling", L"Fl\u00fcssiges Karten-Scrollen"), WS_CHILD | BS_AUTOCHECKBOX | WS_VISIBLE, x, y, 290, 24, window, nullptr, nullptr, nullptr);
-    y += ySpace;
-
-    y += ySpace;
-
-    hostGameRadio = CreateWindowEx(0, WC_BUTTON, T(L"Host game / singleplayer", L"Spiel hosten / Einzelspieler"), WS_VISIBLE | WS_CHILD | BS_AUTORADIOBUTTON, x, y, 200, 24, window, nullptr, nullptr, nullptr);
-    y += ySpace;
-
-    portsLabel = CreateWindowEx(0, WC_STATIC, T(L"Host must open port 4005 UDP and TCP", L"Host muss Port 4005 (UDP und TCP) freigeben"), WS_CHILD | WS_VISIBLE, x + 20, y, 300, 24, window, nullptr, nullptr, nullptr);
-    y += ySpace;
-
-    connectToServerRadio = CreateWindowEx(0, WC_BUTTON, T(L"Connect to server", L"Mit Server verbinden"), WS_VISIBLE | WS_CHILD | BS_AUTORADIOBUTTON | WS_GROUP, x, y, 200, 24, window, nullptr, nullptr, nullptr);
-    y += ySpace;
-
-    serverAddressLabel = CreateWindowEx(0, WC_STATIC, T(L"Server IP or hostname (dynamic DNS supported)", L"Server-IP oder Hostname (dynamisches DNS m\u00f6glich)"), WS_CHILD | WS_VISIBLE, x + 20, y, 320, 24, window, nullptr, nullptr, nullptr);
-    y += ySpace;
-
-    serverAddressTextbox = CreateWindowEx(WS_EX_CLIENTEDGE, WC_EDIT, L"host IP or hostname", WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL, x + 20, y, 200, 24, window, nullptr, nullptr, nullptr);
-    y += ySpace;
-
-    testNetworkButton = CreateWindowEx(0, WC_BUTTON, T(L"Test connection", L"Verbindung testen"), WS_CHILD | WS_VISIBLE, x + 20, y, 140, 24, window, nullptr, nullptr, nullptr);
-    y += ySpace;
-
-
-    yMax = std::max(yMax, y + 8);
+    smoothScrollCheckbox = CreateWindowEx(0, WC_BUTTON, T(L"Smooth map scrolling", L"Flüssiges Karten-Scrollen"), WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTOCHECKBOX, x, y, S(305), S(22), window, nullptr, nullptr, nullptr);
   }
 
-  // right side
+  // --- Language + Advanced (right) ---
   {
-    int y = ySpace + headerH;
-    int x = 330;
-
-    CreateWindowEx(0, WC_STATIC, L"Sprache / Language", WS_CHILD | WS_VISIBLE, x, y, 200, 24, window, nullptr, nullptr, nullptr);
-    y += ySpace;
-
-    languageCombo = CreateWindowEx(0, WC_COMBOBOX, nullptr, WS_CHILD | WS_VISIBLE | CBS_DROPDOWNLIST, x, y, 150, 120, window, nullptr, nullptr, nullptr);
+    groupBox(L"Sprache / Language", colR, y0, colRW, S(60));
+    languageCombo = CreateWindowEx(0, WC_COMBOBOX, nullptr, WS_CHILD | WS_VISIBLE | WS_TABSTOP | CBS_DROPDOWNLIST, colR + S(14), y0 + S(24), colRW - S(28), S(120), window, nullptr, nullptr, nullptr);
     SendMessageW(languageCombo, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"English"));
     SendMessageW(languageCombo, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"Deutsch"));
     SendMessageW(languageCombo, CB_SETCURSEL, gLang == Lang::DE ? 1 : 0, 0);
-    y += ySpace;
 
-    y += ySpace;
-
-    CreateWindowEx(0, WC_STATIC, T(L"Debug settings", L"Fehlersuche"), WS_CHILD | WS_VISIBLE, x, y, 200, 24, window, nullptr, nullptr, nullptr);
-    y += ySpace;
-
-    pauseOnStartupCheckbox = CreateWindowEx(0, WC_BUTTON, T(L"Pause on startup", L"Beim Start pausieren"), WS_CHILD | BS_AUTOCHECKBOX | WS_VISIBLE, x, y, 200, 24, window, nullptr, nullptr, nullptr);
-    y += ySpace;
-
-    forceCursorVisibleCheckbox = CreateWindowEx(0, WC_BUTTON, T(L"Force cursor visible", L"Mauszeiger immer anzeigen"), WS_CHILD | BS_AUTOCHECKBOX | WS_VISIBLE, x, y, 200, 24, window, nullptr, nullptr, nullptr);
-    y += ySpace;
-
-    disableCursorCaptureCheckbox = CreateWindowEx(0, WC_BUTTON, T(L"Disable cursor capture", L"Maus nicht im Fenster fangen"), WS_CHILD | BS_AUTOCHECKBOX | WS_VISIBLE, x, y, 200, 24, window, nullptr, nullptr, nullptr);
-    y += ySpace;
-
-
-    yMax = std::max(yMax, y + 8);
+    int gy = y0 + S(70);
+    groupBox(T(L"Troubleshooting", L"Fehlersuche"), colR, gy, colRW, S(106));
+    int x = colR + S(14);
+    int y = gy + S(24);
+    pauseOnStartupCheckbox = CreateWindowEx(0, WC_BUTTON, T(L"Pause on startup", L"Beim Start pausieren"), WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTOCHECKBOX, x, y, colRW - S(24), S(22), window, nullptr, nullptr, nullptr);
+    y += rowH;
+    forceCursorVisibleCheckbox = CreateWindowEx(0, WC_BUTTON, T(L"Force cursor visible", L"Mauszeiger immer zeigen"), WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTOCHECKBOX, x, y, colRW - S(24), S(22), window, nullptr, nullptr, nullptr);
+    y += rowH;
+    disableCursorCaptureCheckbox = CreateWindowEx(0, WC_BUTTON, T(L"Disable cursor capture", L"Maus nicht einfangen"), WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTOCHECKBOX, x, y, colRW - S(24), S(22), window, nullptr, nullptr, nullptr);
   }
 
-  playButton = CreateWindowEx(0, WC_BUTTON, T(L"Play", L"Spielen"), WS_CHILD | WS_VISIBLE, (width - 140) / 2, yMax, 140, 34, window, nullptr, nullptr, nullptr);
-
-  // credits / author links (links clickable - open in browser)
+  // --- Multiplayer (full width) ---
+  int mpY = y0 + S(188);
   {
-    int x = 30;
-    int y = yMax + 50;
+    const int h = S(132);
+    groupBox(L"Multiplayer", colL, mpY, clientW - S(32), h);
+    int x = colL + S(14);
+    int y = mpY + S(24);
 
-    CreateWindowEx(0, WC_STATIC, L"Emperor Reborn v2.5", WS_CHILD | WS_VISIBLE, x, y, 300, 20, window, nullptr, nullptr, nullptr);
-    y += 24;
+    hostGameRadio = CreateWindowEx(0, WC_BUTTON, T(L"Host game / singleplayer", L"Spiel hosten / Einzelspieler"), WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTORADIOBUTTON | WS_GROUP, x, y, S(240), S(22), window, nullptr, nullptr, nullptr);
+    portsLabel = CreateWindowEx(0, WC_STATIC, T(L"Host must open port 4005 UDP and TCP", L"Host muss Port 4005 (UDP + TCP) freigeben"), WS_CHILD | WS_VISIBLE, x + S(20), y + S(24), S(230), S(36), window, nullptr, nullptr, nullptr);
+    connectToServerRadio = CreateWindowEx(0, WC_BUTTON, T(L"Connect to server", L"Mit Server verbinden"), WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTORADIOBUTTON, x, y + S(70), S(240), S(22), window, nullptr, nullptr, nullptr);
 
-    githubLink = CreateWindowEx(0, WC_STATIC, L"github.com/azmawee", WS_CHILD | WS_VISIBLE | SS_NOTIFY, x, y, 300, 20, window, nullptr, nullptr, nullptr);
-    y += 22;
-
-    facebookLink = CreateWindowEx(0, WC_STATIC, L"facebook.com/azmawee", WS_CHILD | WS_VISIBLE | SS_NOTIFY, x, y, 300, 20, window, nullptr, nullptr, nullptr);
-    y += 22;
-
-    CreateWindowEx(0, WC_STATIC, L"azmawee@freebsd.my", WS_CHILD | WS_VISIBLE, x, y, 300, 20, window, nullptr, nullptr, nullptr);
+    int rx = colL + S(270);
+    serverAddressLabel = CreateWindowEx(0, WC_STATIC, T(L"Server IP or hostname (dynamic DNS supported)", L"Server-IP oder Hostname (auch dynamisches DNS)"), WS_CHILD | WS_VISIBLE, rx, y, S(244), S(36), window, nullptr, nullptr, nullptr);
+    serverAddressTextbox = CreateWindowEx(WS_EX_CLIENTEDGE, WC_EDIT, L"host IP or hostname", WS_CHILD | WS_VISIBLE | WS_TABSTOP | ES_AUTOHSCROLL, rx, y + S(38), S(244), S(24), window, nullptr, nullptr, nullptr);
+    testNetworkButton = CreateWindowEx(0, WC_BUTTON, T(L"Test connection", L"Verbindung testen"), WS_CHILD | WS_VISIBLE | WS_TABSTOP, rx, y + S(68), S(150), S(28), window, nullptr, nullptr, nullptr);
   }
+
+  // --- Play button ---
+  int playY = mpY + S(146);
+  playButton = CreateWindowEx(0, WC_BUTTON, T(L"Play", L"Spielen"), WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_DEFPUSHBUTTON, (clientW - S(200)) / 2, playY, S(200), S(42), window, nullptr, nullptr, nullptr);
+
+  // --- Footer: version + credits (links open in the browser) ---
+  int footY = playY + S(58);
+  HWND versionLabel = CreateWindowEx(0, WC_STATIC, L"Emperor Spice v1.0", WS_CHILD | WS_VISIBLE, colL, footY, S(200), S(20), window, nullptr, nullptr, nullptr);
+  githubLink = CreateWindowEx(0, WC_STATIC, T(L"Based on Emperor Reborn by azmawee", L"Basiert auf Emperor Reborn von azmawee"), WS_CHILD | WS_VISIBLE | SS_NOTIFY, colL, footY + S(22), S(330), S(20), window, nullptr, nullptr, nullptr);
+  facebookLink = CreateWindowEx(0, WC_STATIC, L"github.com/badrig217/EmperorRebornDE", WS_CHILD | WS_VISIBLE | SS_NOTIFY, colL, footY + S(42), S(330), S(20), window, nullptr, nullptr, nullptr);
+  int clientH = footY + S(70);
+
+  // Fonts: Segoe UI everywhere, semibold for the play button and the version line.
+  gUiFont = makeFont(9, FW_NORMAL);
+  gLinkFont = makeFont(9, FW_NORMAL, true);
+  HFONT boldFont = makeFont(9, FW_SEMIBOLD);
+  HFONT playFont = makeFont(12, FW_SEMIBOLD);
+  EnumChildWindows(window, setFontOnChild, reinterpret_cast<LPARAM>(gUiFont));
+  SendMessageW(playButton, WM_SETFONT, reinterpret_cast<WPARAM>(playFont), TRUE);
+  SendMessageW(versionLabel, WM_SETFONT, reinterpret_cast<WPARAM>(boldFont), TRUE);
+  SendMessageW(githubLink, WM_SETFONT, reinterpret_cast<WPARAM>(gLinkFont), TRUE);
+  SendMessageW(facebookLink, WM_SETFONT, reinterpret_cast<WPARAM>(gLinkFont), TRUE);
+
+  // Size the window so its client area fits the layout, centred on the screen.
+  gHeaderBandHeight = S(146);
+  wr = { 0, 0, clientW, clientH };
+  AdjustWindowRectEx(&wr, WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX, FALSE, 0);
+  int winW = wr.right - wr.left, winH = wr.bottom - wr.top;
+  SetWindowPos(window, nullptr, (GetSystemMetrics(SM_CXSCREEN) - winW) / 2, (GetSystemMetrics(SM_CYSCREEN) - winH) / 2, winW, winH, SWP_NOZORDER);
 
   defWndProc = reinterpret_cast<WNDPROC>(SetWindowLongPtr(window, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(WndProc)));
 

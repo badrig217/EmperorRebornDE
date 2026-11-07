@@ -1,3 +1,23 @@
+# Emperor Spice
+
+**Deutsch:** Emperor Spice bringt *Emperor: Schlacht um Dune* (2001) auf moderne Windows-PCs – mit Breitbild,
+hohen Auflösungen und funktionierendem Multiplayer. Unterstützt die **deutsche und die englische** Version des Spiels
+(Patch `EM109DE.EXE` bzw. `EM109EN.EXE`), der Launcher ist zweisprachig.
+
+**English:** Emperor Spice brings *Emperor: Battle for Dune* (2001) to modern Windows PCs – widescreen, high
+resolutions and working multiplayer. Supports the **German and English** game (patch `EM109DE.EXE` or
+`EM109EN.EXE`), with a bilingual launcher.
+
+Emperor Spice is a community fork of **[Emperor Reborn](https://github.com/azmawee/EmperorReborn) by azmawee**,
+which itself builds on wheybags' EmperorLauncher. All the hard work on widescreen, the HUD and multiplayer comes
+from those projects – thank you! / Basiert auf Emperor Reborn von azmawee – vielen Dank!
+
+You need your own original game CDs (or ISO images) and the official v1.09 patch. No EA/Westwood files are included.
+
+---
+
+*The original Emperor Reborn README follows below.*
+
 # Emperor Reborn
 
 Emperor Reborn is a free, open-source launcher to play *Emperor: Battle for Dune* (Westwood, 2001) on
