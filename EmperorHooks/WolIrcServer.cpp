@@ -42,10 +42,19 @@ void WolIrcServer::run()
       Connection* connection = nullptr;
       {
         std::scoped_lock lock(connectionsMutex);
+        // The port is open to the internet while hosting: don't let a flood of connections exhaust memory.
+        // A real game has at most 8 players, so this leaves plenty of room.
+        if (connections.size() >= kMaxConnections)
+        {
+          Log("WolIrcServer: too many connections, refusing %s\n", inet_ntoa(clientAddr.sin_addr));
+          closesocket(clientSocket);
+          continue;
+        }
         connection = connections.emplace_back(std::make_unique<Connection>(*this, clientSocket, clientAddr)).get();
       }
 
-      std::thread([&]() { this->clientLoop(*connection); }).detach();
+      // Capture the pointer by value: the loop variable is reused for the next connection.
+      std::thread([this, connection]() { this->clientLoop(*connection); }).detach();
     }
   }
 }
@@ -77,7 +86,7 @@ static std::vector<std::string> splitWhitespace(const std::string_view str)
 void WolIrcServer::clientLoop(Connection& connection)
 {
   std::vector<char> buffer;
-  buffer.resize(1024 * 1024 * 10);
+  buffer.resize(64 * 1024);
 
   std::string lineBuffer;
 
@@ -96,6 +105,15 @@ void WolIrcServer::clientLoop(Connection& connection)
     for (int i = 0; i < result; i++)
     {
       lineBuffer.push_back(buffer[i]);
+
+      // WOL lines are short. Anything this long without a newline is not a game talking to us.
+      if (lineBuffer.size() > kMaxLineLength)
+      {
+        Log("WolIrcServer: line too long from %s, closing connection\n", inet_ntoa(connection.clientAddr.sin_addr));
+        connection.connected = false;
+        lineBuffer.clear();
+        break;
+      }
 
       if (buffer[i] == '\n')
       {
@@ -219,7 +237,9 @@ void WolIrcServer::clientLoop(Connection& connection)
           }
           else
           {
-            release_assert(false);
+            // Unknown command: ignore it. Anyone on the internet can reach this port while hosting,
+            // so bad input must never take the game down.
+            Log("WolIrcServer: ignoring unknown command from %s\n", inet_ntoa(connection.clientAddr.sin_addr));
           }
         }
 
@@ -240,7 +260,7 @@ void WolIrcServer::clientLoop(Connection& connection)
     for (int32_t j = 0; j < int32_t(connections[i]->hostChannelMembers.size()); j++)
     {
       if (connections[i]->hostChannelMembers[j] == &connection)
-        connections[i]->hostChannelMembers.erase(connections[i]->hostChannelMembers.begin() + j);;
+        connections[i]->hostChannelMembers.erase(connections[i]->hostChannelMembers.begin() + j--);
     }
 
     // disconnect any clients that were connected to this channel TODO: notifiy them?
@@ -252,7 +272,7 @@ void WolIrcServer::clientLoop(Connection& connection)
   for (int32_t i = 0; i < int32_t(connections.size()); i++)
   {
     if (connections[i].get() == &connection)
-      connections.erase(connections.begin() + i);
+      connections.erase(connections.begin() + i--);
   }
 }
 
@@ -272,8 +292,9 @@ std::string WolIrcServer::Connection::getIpString() const
 // I don't know what software the xwis server is running. It doesn't seem to be using PVPGN, as the
 // responses are notably different from what I've seen in the PVPGN source code.
 
-#define wolcommand_assert(X) release_assert(X)
-//#define wolcommand_assert(X) if (!(X)) do { Log("wolcommand_assert failed: %s, %s:%d", #X, __FILE__, __LINE__); return; } while (0)
+// Malformed commands are logged and dropped instead of aborting the game: the port is reachable from the
+// internet while hosting.
+#define wolcommand_assert(X) if (!(X)) do { Log("wolcommand_assert failed: %s, %s:%d\n", #X, __FILE__, __LINE__); return; } while (0)
 
 
 void WolIrcServer::Connection::handle_verchk(const std::vector<std::string>& line)
@@ -875,8 +896,8 @@ void WolIrcServer::Connection::handle_KICK(const std::vector<std::string>& line)
 
   wolcommand_assert(line.size() == 3);
   wolcommand_assert(this->hosting);
-  release_assert(line[1] == "#" + this->hostChannelName);
-  release_assert(line[2] != this->nick);
+  wolcommand_assert(line[1] == "#" + this->hostChannelName);
+  wolcommand_assert(line[2] != this->nick);
 
   std::string message = ":" + this->nick + "!u@h KICK #" + this->hostChannelName + " " + line[2] + ":" + this->nick + "\r\n";
 

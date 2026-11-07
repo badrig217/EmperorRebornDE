@@ -69,6 +69,17 @@ protected:
 
   std::recursive_mutex mutex;
   std::map<u_short, std::queue<ReceivedPacket>> receivedPacketsByPort;
+
+  // Queue a received packet for the game. The queue per port is capped so a peer that floods us
+  // can't grow memory without bound (the oldest packets are dropped first).
+  ReceivedPacket& queueReceivedPacket(u_short destPortH)
+  {
+    constexpr size_t kMaxQueuedPacketsPerPort = 4096;
+    std::queue<ReceivedPacket>& queue = this->receivedPacketsByPort[destPortH];
+    while (queue.size() >= kMaxQueuedPacketsPerPort)
+      queue.pop();
+    return queue.emplace();
+  }
   in_addr servservAddr = {};
 
   std::vector<SocketData> sockets;
