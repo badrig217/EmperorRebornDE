@@ -324,7 +324,7 @@ HWND graphicsPackCheckbox = nullptr;
 HWND cameraZoomCombo = nullptr;
 
 // Farthest camera zoom choices (percent of the original game's farthest zoom)
-const int cameraZoomSteps[] = { 100, 150, 200 };
+const int cameraZoomSteps[] = { 100, 125, 150, 175 };
 HWND shortcutButton = nullptr;
 HWND moneyCheatCheckbox = nullptr;
 HWND largeFontCheckbox = nullptr;
@@ -461,9 +461,9 @@ LRESULT onResolutionChanged(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPara
     settings.screenHeight = resolutions[index].height;
     settings.widescreen = resolutions[index].widescreen;
     settings.upscaleToDesktop = resolutions[index].upscale;
-    // The game draws text in fixed pixels while menus and the sidebar scale with the resolution.
-    // From 1440p (rendered natively, not upscaled) the 2x fonts match the original proportions,
-    // so suggest them there. The player can still untick it afterwards.
+    // The small in-game messages are drawn in fixed pixels, so they get tiny at high resolutions.
+    // From 1440p (rendered natively, not upscaled) suggest the 2x message font. The player can still
+    // change it afterwards.
     if (IsWindowEnabled(largeFontCheckbox))
     {
       settings.largeFont = !resolutions[index].upscale && resolutions[index].height >= 1440;
@@ -940,8 +940,9 @@ int wmain(int argc, wchar_t* argv[])
     CreateWindowEx(0, WC_STATIC, T(L"Camera zoom", L"Kamera-Zoom"), WS_CHILD | WS_VISIBLE, x, y + S(4), S(90), S(22), window, nullptr, nullptr, nullptr);
     cameraZoomCombo = CreateWindowEx(0, WC_COMBOBOX, nullptr, WS_CHILD | WS_VISIBLE | WS_TABSTOP | CBS_DROPDOWNLIST, x + S(96), y, S(206), S(120), window, nullptr, nullptr, nullptr);
     SendMessageW(cameraZoomCombo, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(T(L"Original", L"Original")));
-    SendMessageW(cameraZoomCombo, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(T(L"Farther (1.5x)", L"Weiter (1,5x)")));
-    SendMessageW(cameraZoomCombo, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(T(L"Far (2x)", L"Sehr weit (2x)")));
+    SendMessageW(cameraZoomCombo, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(T(L"A little farther (1.25x)", L"Etwas weiter (1,25x)")));
+    SendMessageW(cameraZoomCombo, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(T(L"Farther (1.5x, recommended)", L"Weiter (1,5x, empfohlen)")));
+    SendMessageW(cameraZoomCombo, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(T(L"Far (1.75x)", L"Sehr weit (1,75x)")));
   }
 
   // --- Language + Advanced (right) ---
@@ -989,8 +990,8 @@ int wmain(int argc, wchar_t* argv[])
                                                         L"Geld-Cheat im Einzelspieler:  Strg+Umschalt+G = +25.000 Credits"),
                                         WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTOCHECKBOX, colL + S(14), exY + S(24), S(490), S(22), window, nullptr, nullptr, nullptr);
     // Greyed out when the launcher was built without the bundled fonts folder (developer builds).
-    largeFontCheckbox = CreateWindowEx(0, WC_BUTTON, T(L"Large in-game text (2x, for 1440p and above)",
-                                                       L"Gro\u00dfe Schrift im Spiel (doppelt so gro\u00df, ab 1440p)"),
+    largeFontCheckbox = CreateWindowEx(0, WC_BUTTON, T(L"Large in-game messages and hints (2x)",
+                                                       L"Gro\u00dfe Meldungen und Hinweise im Spiel (2x)"),
                                        WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTOCHECKBOX, colL + S(14), exY + S(50), S(490), S(22), window, nullptr, nullptr, nullptr);
     if (!fontPack::available(std::filesystem::path(getFolderThisExeIsIn()) / L"fonts"))
       EnableWindow(largeFontCheckbox, FALSE);
