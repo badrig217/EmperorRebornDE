@@ -33,7 +33,6 @@ namespace
   FontRecord* const kFontTable = reinterpret_cast<FontRecord*>(0x5d3540);
 
   const char kSmallHd[] = "SmallHD";
-  const char kStandardHd[] = "StandardHD";
 
   std::string dataDir()
   {
@@ -103,14 +102,10 @@ void initLargeFont(bool enabled)
       r->rowHeight = 32;
       patched++;
     }
-    else if (sameName(r->name, "Standard") && r->rowHeight == 30 && r->pages == 1)
-    {
-      r->name = kStandardHd;
-      r->rowHeight = 60;
-      patched++;
-    }
+    // "Standard" (menus, options, buttons) stays as it is: those screens are laid out for it and
+    // the player tested 2x there as far too large. Only the small in-game text needed help.
   }
 
   VirtualProtect(kFontTable, sizeof(FontRecord) * 8, oldProtect, &oldProtect);
-  Log("LargeFont: %d fonts switched to HD (2x)\n", patched);
+  Log("LargeFont: %d font(s) switched to HD (2x)\n", patched);
 }
