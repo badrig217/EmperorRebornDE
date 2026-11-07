@@ -1,208 +1,132 @@
-# Emperor Spice
+<p align="center"><img src="icon/launcher-header-preview.png" alt="Emperor Spice" width="514"></p>
 
-**Deutsch:** Emperor Spice bringt *Emperor: Schlacht um Dune* (2001) auf moderne Windows-PCs – mit Breitbild,
-hohen Auflösungen und funktionierendem Multiplayer. Unterstützt die **deutsche und die englische** Version des Spiels
-(Patch `EM109DE.EXE` bzw. `EM109EN.EXE`), der Launcher ist zweisprachig.
+<p align="center">
+<b>Emperor: Schlacht um Dune (2001) auf modernen Windows-PCs – Breitbild, hohe Auflösung, schärfere Grafik, Deutsch &amp; Englisch.</b><br>
+<i>Emperor: Battle for Dune on modern Windows PCs – widescreen, high resolution, sharper graphics, German &amp; English.</i>
+</p>
 
-**English:** Emperor Spice brings *Emperor: Battle for Dune* (2001) to modern Windows PCs – widescreen, high
-resolutions and working multiplayer. Supports the **German and English** game (patch `EM109DE.EXE` or
-`EM109EN.EXE`), with a bilingual launcher.
-
-Emperor Spice is a community fork of **[Emperor Reborn](https://github.com/azmawee/EmperorReborn) by azmawee**,
-which itself builds on wheybags' EmperorLauncher. All the hard work on widescreen, the HUD and multiplayer comes
-from those projects – thank you! / Basiert auf Emperor Reborn von azmawee – vielen Dank!
-
-You need your own original game CDs (or ISO images) and the official v1.09 patch. No EA/Westwood files are included.
+<p align="center"><a href="#deutsch">Deutsch</a> · <a href="#english">English</a></p>
 
 ---
 
-*The original Emperor Reborn README follows below.*
+<a id="deutsch"></a>
+## Deutsch
 
-# Emperor Reborn
+**Emperor Spice** ist ein kostenloser Community-Patch, der *Emperor: Schlacht um Dune* auf Windows 10 und 11 wieder spielbar macht – ohne die alten, auf modernen Systemen kaputten CD-Installer und ohne Gebastel. Er basiert auf [Emperor Reborn](https://github.com/azmawee/EmperorReborn) von azmawee und erweitert es um die deutsche Version, eine zweisprachige Oberfläche und ein Grafik-Paket.
 
-Emperor Reborn is a free, open-source launcher to play *Emperor: Battle for Dune* (Westwood, 2001) on
-modern Windows, tested on Windows 11 and expected to work on Windows 10, with real 16:9 widescreen,
-fullscreen scaling and working multiplayer.
+![Vergleich ohne und mit Grafik-Paket](screenshots/graphics-pack-compare.jpg)
 
-![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0078D6?logo=windows)
-![License](https://img.shields.io/badge/license-MIT--0-green)
-![Build](https://img.shields.io/badge/build-Visual%20Studio%202022%20%7C%20x86-5C2D91?logo=visualstudio)
+### Was Emperor Spice kann
 
-![Emperor: Battle for Dune running in 16:9 widescreen](screenshots/gameplay-2.png)
+- **Deutsche und englische Spielversion** – der Patch 1.09 (`EM109DE.EXE` oder `EM109EN.EXE`) wird automatisch erkannt.
+- **Eigener Installer** – kopiert das Spiel von deinen 4 CDs (oder eingebundenen ISO-Abbildern) und spielt den Patch ein. Die alten Installer und der SafeDisc-Kopierschutz, die unter Windows 10/11 nicht mehr laufen, werden nicht benötigt.
+- **Echtes Breitbild** (16:9) bis 2560×1440, inklusive angepasster Seitenleiste und Menüs.
+- **Grafik-Paket** (abschaltbar): 16-fache anisotrope Texturfilterung über dgVoodoo2 sowie Kantenglättung (SMAA), mehr Kontrast und Nachschärfen über ReShade.
+- **Zweisprachiger Launcher** (Deutsch/Englisch) mit moderner Oberfläche.
+- **Flüssiges Karten-Scrollen**, Zwischensequenzen wahlweise im Originalformat 4:3.
+- **Multiplayer** über direkte IP-Verbindung (der alte Westwood-Online-Server existiert nicht mehr).
+- **Desktop-Verknüpfung** wird nach der Installation automatisch angelegt.
 
-I wanted to play Emperor again and ran into the usual problems with a 25-year-old game on modern
-Windows: the installer fights the OS, and even once it runs the game sits in a small box in the
-middle of the monitor. Multiplayer has been dead since Westwood Online shut down.
+In Arbeit: Geld-Cheat für den Einzelspieler, Installation direkt aus ISO-Dateien.
 
-Tom Mason (wheybags) already wrote a [patch](https://github.com/wheybags/EmperorLauncher) that
-handles the hard part: installing and launching cleanly without the original disc check. This is a
-fork of his work with the few extra things I wanted, wrapped in a launcher so you do not have to
-edit the registry by hand.
+![Launcher](screenshots/launcher-de.png)
 
-## What this adds on top of wheybags' patch
+### Was du brauchst
 
-- **True widescreen (16:9).** The headline feature. Every other way of running Emperor wide either
-  stretches it fat or crops the top and bottom off. This widens the actual view instead: the
-  battlefield renders at the real aspect with no stretching, and the harder half (sidebar, cursor,
-  edge scroll and menus) lines up correctly too. The in-mission sidebar/HUD layout builds on Moro's
-  widescreen patch, shared freely in the Emperor community on Discord and used with thanks; the 3D
-  camera scaling and the front-end menu and star-map fixes are this project's. As far as I can tell it
-  is the first real widescreen for this game in the 25 years since release where the whole interface
-  works.
-- **Fullscreen scaling.** Your chosen resolution fills the whole monitor instead of pillarboxing.
-  On a 4K screen the original resolutions are unusably tiny otherwise.
-- **Upscale for big, readable UI at 4K.** On a 4K monitor the sharp modes make the HUD and text tiny.
-  The "Upscale ... big UI" entries keep the desktop at its native resolution and render at a lower
-  16:9 size (2560x1440, 1920x1080 or 1280x720), then stretch that frame to fill the screen. Same big
-  interface as a low resolution, without the monitor switching display modes.
-- **Cutscene movies kept at 4:3.** The FMV cutscenes are 4:3, so widescreen stretched them fat. They now
-  play at their original aspect with black bars by default; a launcher tickbox turns the bars off and
-  stretches them wide if you prefer.
-- **Resolution dropdown.** 16:9 widescreen (1280x720, 1600x900, 1920x1080, 2560x1440) or the
-  original 4:3 modes (640x480 up to 1152x864), or match-desktop. Defaults to 1280x720. Saved between
-  runs.
-- **Hostname / DDNS in multiplayer.** Connect to `something.duckdns.org` instead of a raw IP, which
-  is handy when the host's home IP keeps changing.
-- **No VC++ Redistributable needed.** The C runtime is linked statically, so there is nothing extra to
-  install. You still run two files, `EmperorReborn.exe` and `EmperorHooks.dll`, plus your own
-  `EM109EN.EXE` on first setup.
-- **Builds its own clean copy** of the game from your discs. It does not touch any existing install.
+- Windows 10 oder 11 (64 Bit)
+- **Dein eigenes Spiel**: die 4 Original-CDs von *Emperor: Schlacht um Dune* (deutsch oder englisch) oder ISO-Abbilder davon, die du in Windows einbinden kannst. Das Spiel ist **nicht** enthalten.
+- **Den offiziellen Patch 1.09**: `EM109DE.EXE` (deutsch) bzw. `EM109EN.EXE` (englisch). Er ist urheberrechtlich geschützt und deshalb nicht enthalten, war aber ein kostenloser Download und ist z. B. auf Fan-Seiten wie CNCNZ noch erhältlich.
 
-It is still the original 2001 game with all its original content. The one real change is optional
-widescreen; leave it on a 4:3 resolution and it runs exactly like it always did. Preservation, not a
-remaster.
+### Installation
 
-![The main menu in 16:9 widescreen](screenshots/menu.png)
-![Another menu view in widescreen](screenshots/menu-2.png)
-![A bigger battle in widescreen](screenshots/gameplay-3.png)
+1. **Herunterladen**: Lade die aktuelle `EmperorSpice-v….zip` unter [Releases](../../releases) herunter.
+2. **Entpacken** in einen eigenen Ordner, z. B. `D:\Spiele\EmperorSpice`.
+   **Wichtig:** Der Pfad darf keine Umlaute oder Sonderzeichen enthalten (also nicht `C:\Users\Jürgen\…`).
+3. **Patch dazulegen**: Kopiere `EM109DE.EXE` (oder `EM109EN.EXE`) in denselben Ordner wie `EmperorSpice.exe`.
+4. **CDs bereitlegen**: CD 1 einlegen bzw. die ISO-Abbilder einbinden (Doppelklick auf die ISO). Die CDs heißen `EMPEROR1` bis `EMPEROR4`; die weiteren CDs fragt der Installer nacheinander ab.
+5. **`EmperorSpice.exe` starten** und die Frage „Spiel jetzt hier installieren?“ mit OK bestätigen.
+   - Erscheint die blaue Windows-Meldung *„Der Computer wurde durch Windows geschützt“*: auf **„Weitere Informationen“** und dann **„Trotzdem ausführen“** klicken. Die Meldung kommt, weil das Programm nicht kostenpflichtig digital signiert ist.
+6. Nach der Installation liegt eine Verknüpfung **„Emperor Spice“** auf dem Desktop. Im Launcher Auflösung wählen und auf **Spielen** klicken.
 
-## Install
+Danach brauchst du die CDs nicht mehr.
 
-You provide your own copy of the game (English version) and EA's official v1.09 patch,
-`EM109EN.EXE`. That patch is copyrighted by EA and is not included here; it was a free download and
-is easy to find by searching the filename. Get it from a source you trust. No game data is distributed
-in this repo.
+### Das Grafik-Paket
 
-1. Put `EmperorReborn.exe`, `EmperorHooks.dll`, and your own `EM109EN.EXE` in the same folder.
-2. Run `EmperorReborn.exe`. First launch asks for each disc in turn (Disc 1 install, then Atreides,
-   Harkonnen, Ordos) and builds a clean copy of the game. It does not need an existing install.
-3. Pick your resolution and Fullscreen in the launcher, then Play.
+Ist der Haken **„Grafik-Paket (dgVoodoo + ReShade)“** gesetzt (Standard), richtet der Launcher beim Start alles selbst ein:
 
-First-run setup happens once. There is a plain-English walkthrough in
-[`INSTALL.txt`](INSTALL.txt).
-
-<p align="center"><img src="screenshots/launcher-ui.png" alt="The Emperor Reborn launcher" width="360"></p>
-
-### Resolution
-
-The launcher saves your pick. Lower resolutions give bigger, more readable text; higher ones are
-sharper with smaller UI. The three "Upscale ... big UI" modes work differently, they keep your
-desktop at its native resolution (so the monitor does not switch display modes), render the game at a
-lower 16:9 size, then stretch that frame to fill the screen. That gives the big readable interface of
-a low resolution on a high-resolution desktop. Pick the tier at or below your monitor, a 4K render on
-a 4K screen would not upscale.
-
-| Resolution | Notes |
+| Taste | Funktion |
 |---|---|
-| `1280 x 720` | Widescreen, default, readable text |
-| `1600 x 900` | Widescreen, sharper |
-| `1920 x 1080` | Widescreen, sharp, smaller UI |
-| `2560 x 1440` | Widescreen, sharpest |
-| `640 x 480` to `1152 x 864` | Original 4:3 modes |
-| Desktop (match screen) | Native sharpness, but the UI gets small on 4K |
-| `Upscale 4K, big UI` | Renders at 2560x1440 and stretches to fill the screen, big UI |
-| `Upscale 2K, big UI` | Renders at 1920x1080 and stretches, bigger UI |
-| `Upscale 1K, big UI` | Renders at 1280x720 and stretches, biggest UI |
+| **Rollen** (Scroll Lock) | Effekte ein/aus – zum direkten Vergleich |
+| **Pos1** (Home) | ReShade-Menü öffnen, z. B. um Schärfe oder Kontrast anzupassen |
 
-On a 4K monitor the "Upscale ... big UI" modes are the comfortable pick, they give big readable UI
-without resizing the desktop. Otherwise skip "Desktop" and use 1280x720 widescreen (or 1920x1080 if
-you want it sharper) with Fullscreen ticked. If the image still sits centered in a small box, your GPU
-is set to "no scaling", switch it to Full-screen in the NVIDIA Control Panel (*Adjust desktop size and
-position*), or the AMD/Intel equivalent.
+Deine Änderungen im ReShade-Menü bleiben erhalten. Ohne Haken entfernt der Launcher die Dateien wieder, das Spiel läuft dann wie im Original.
 
-## Verify your download
+> **Hinweis:** Bitte in dgVoodoo **keine** Kantenglättung (MSAA) einschalten – das Spiel bleibt damit beim Start hängen. Die Kantenglättung übernimmt ReShade (SMAA).
 
-Every release is checksummed so you can confirm a download is the real one and not a tampered copy with
-something slipped in. The official SHA256 hashes are published on the
-[site](https://azmawee.github.io/EmperorReborn/) and in the release notes. Check the zip in PowerShell
-with
+### Probleme?
 
-```powershell
-Get-FileHash .\EmperorReborn-v2.5.zip -Algorithm SHA256
-```
+- **Das Spiel startet nicht / hängt:** Im Ordner `data` liegt die Protokolldatei `emperor.txt`. Hänge sie bei einem [Issue](../../issues) an.
+- **Warnung „Falsche Game.exe-Version“:** Die Installation ist nicht vollständig durchgelaufen oder es wurde ein anderer Patch verwendet. Im Dialog „Nein“ wählen, um neu zu installieren.
+- **Texte im Spiel sehr klein:** Im Launcher eine der Auflösungen „Hochskaliert …, große UI“ wählen (Bild wird etwas weicher, Schrift größer).
+- **Grafik-Paket ausprobieren ohne Risiko:** Haken im Launcher entfernen – alles ist wie vorher.
 
-and compare it to the published hash. The zip also carries a `SHA256SUMS.txt` listing the hashes of the
-two executables, so you can verify those after extracting. If a copy you got from anywhere does not
-match, do not run it.
+---
 
-## Multiplayer
+<a id="english"></a>
+## English
 
-Westwood Online is gone, so this uses direct IP.
+**Emperor Spice** is a free community patch that makes *Emperor: Battle for Dune* playable again on Windows 10 and 11 – without the old CD installers that no longer work on modern systems. It is based on [Emperor Reborn](https://github.com/azmawee/EmperorReborn) by azmawee and adds support for the German game, a bilingual launcher and a graphics pack.
 
-- Host: pick **Host game / singleplayer**, forward **port 4005 (UDP and TCP)** on the router.
-- Others: pick **Connect to server**, enter the host's IP, hostname, or DDNS name. Use **Test
-  connection** only after the host has clicked Play.
-- In game: **Multiplayer**, username + 8-character password, **Login**, **Custom**. Host clicks
-  **Host**; others **Refresh** if they don't see it. Pick Deathmatch or Co-op Campaign, everyone
-  **Accept**, host clicks **Play**.
+### Features
 
-Only the parts needed for this flow are wired up, so stick to these steps. The connect box takes a
-hostname or DDNS name (DuckDNS, No-IP, Cloudflare) as well as a raw IP, which keeps the address
-stable when a home IP changes. DDNS does not open the port for you, you still forward 4005.
+- **English and German game** – the v1.09 patch (`EM109EN.EXE` or `EM109DE.EXE`) is detected automatically.
+- **Own installer** – copies the game from your 4 CDs (or mounted ISO images) and applies the patch; the original installer and the SafeDisc copy protection are not needed.
+- **True 16:9 widescreen** up to 2560×1440, including the sidebar and menus.
+- **Graphics pack** (optional): 16x anisotropic filtering via dgVoodoo2, plus SMAA anti-aliasing, contrast and sharpening via ReShade.
+- **Bilingual launcher** (English/German) with a modern look.
+- **Smooth map scrolling**, cutscenes optionally in their original 4:3.
+- **Multiplayer** via direct IP (the old Westwood Online servers are gone).
+- **Desktop shortcut** is created after installation.
 
-## Building
+Work in progress: money cheat for single player, installing directly from ISO files.
 
-Needs **Visual Studio 2022** with the **Desktop development with C++** workload. If it complains
-about the toolset, right-click the solution and Retarget. `EM109EN.EXE` is not needed to build and
-is never embedded; the launcher reads it at runtime from the folder next to the exe.
+### Requirements
 
-Build Release / x86, or from a Developer PowerShell:
+- Windows 10 or 11 (64-bit)
+- **Your own game**: the 4 original CDs (English or German) or ISO images of them. The game is **not** included.
+- **The official v1.09 patch**: `EM109EN.EXE` or `EM109DE.EXE` (copyrighted, therefore not included; it was a free download and can still be found on fan sites such as CNCNZ).
 
-```powershell
-msbuild EmperorLauncher.sln /t:Build /p:Configuration=Release /p:Platform=x86
-```
+### Installation
 
-Output is `Release/EmperorReborn.exe` and `Release/EmperorHooks.dll`. Both are needed and sit in the
-same folder. The exe links the C runtime statically, so no VC++ Redist on the player's side.
+1. Download `EmperorSpice-v….zip` from [Releases](../../releases) and extract it to its own folder, e.g. `D:\Games\EmperorSpice` (**no special characters** in the path).
+2. Copy `EM109EN.EXE` (or `EM109DE.EXE`) next to `EmperorSpice.exe`.
+3. Insert disc 1 or mount the ISO images (discs `EMPEROR1`–`EMPEROR4`).
+4. Run `EmperorSpice.exe` and confirm the installation. If Windows SmartScreen appears, click **"More info" → "Run anyway"** (the program is not commercially code-signed).
+5. Use the **Emperor Spice** desktop shortcut from then on, pick a resolution and click **Play**.
 
-To package a redistributable zip (no copyrighted EA content):
+**Graphics pack:** Scroll Lock toggles the effects, Home opens the ReShade menu. Do **not** enable MSAA in dgVoodoo – the game hangs with it; anti-aliasing is done by ReShade (SMAA).
 
-```powershell
-powershell -ExecutionPolicy Bypass -File .\package.ps1 -Version 2.0
-```
+**Problems?** Attach `data\emperor.txt` to an [issue](../../issues).
 
-wheybags wrote a good [blog post](https://wheybags.com/blog/emperor.html) on the technical details
-of the original patch.
+---
 
-## If something's off
+## Credits
 
-- **Already have a working install (wheybags' version, or an old one)?** You can drop
-  `EmperorReborn.exe` and `EmperorHooks.dll` straight into that folder and run. If the game files
-  are already compatible it skips the disc step and goes to the launcher. People have reported this
-  working over an existing install with no reinstall.
-- **Windows Security or antivirus flags it.** An unsigned exe trips SmartScreen, and a launcher that
-  injects a DLL into the game can trip antivirus heuristics too even though it is clean. First check the
-  download against the published SHA256 above so you know it is the real build, then click More info
-  then Run anyway. Only add the install folder as a Windows Security exclusion as a last resort, if it
-  keeps getting quarantined. Source is on GitHub if you would rather build it yourself.
-- **Image sits in a black box in fullscreen.** That is the GPU upscaler set to "no scaling". Fix it
-  in the GPU control panel:
-  - NVIDIA: Adjust desktop size and position, Scaling: Full-screen.
-  - AMD, including handhelds like the ROG/Xbox Ally: turn off GPU scaling and set scaling mode to
-    preserve aspect ratio.
-  - On a 1080p screen, 1024x768 fullscreen looks good.
+Emperor Spice stands on the shoulders of others – thank you!
 
-## Credits and license
+- **[Emperor Reborn](https://github.com/azmawee/EmperorReborn)** by azmawee – widescreen, HUD, upscaling, multiplayer and the launcher this project is built on ([original README](docs/EmperorReborn-README.md)).
+- **[EmperorLauncher](https://github.com/wheybags/EmperorLauncher)** by Tom Mason (wheybags) – the original modern-Windows patch.
+- **Moro** – in-game HUD/sidebar widescreen patch, shared in the Emperor community.
+- **[dgVoodoo2](http://dege.freeweb.hu/dgVoodoo2/)** by Dege, **[ReShade](https://reshade.me)** by crosire, **[SweetFX](https://github.com/CeeJayDK/SweetFX)** by CeeJay.dk, SMAA by Jorge Jimenez et al.
 
-- Original project: [EmperorLauncher](https://github.com/wheybags/EmperorLauncher) by Tom Mason
-  (wheybags), MIT-0.
-- This fork keeps MIT-0 (see [`license.txt`](license.txt)). Third-party components are listed in
-  [`THIRD-PARTY-NOTICES.txt`](THIRD-PARTY-NOTICES.txt).
-- In-game HUD / sidebar widescreen patch by **Moro**, shared freely in the Emperor community on
-  Discord and used with thanks (see [`THIRD-PARTY-NOTICES.txt`](THIRD-PARTY-NOTICES.txt)).
-- Maintained by azmawee ([GitHub](https://github.com/azmawee)).
+Details and licences: [`THIRD-PARTY-NOTICES.txt`](THIRD-PARTY-NOTICES.txt).
 
-MIT-0 covers only the source in this repo. It grants no rights to *Emperor: Battle for Dune*, its
-data, or the EA patch, which stay with their owners. This is an unofficial fan-made tool, not
-affiliated with or endorsed by Electronic Arts or Westwood Studios. You need to own the game to use
-it.
+## Disclaimer / Rechtliches
+
+Emperor Spice is an unofficial fan project and not affiliated with Electronic Arts or Westwood Studios. *Emperor: Battle for Dune* and *Dune* are trademarks of their respective owners. No game files or EA patches are distributed. The Emperor Spice code is released under the MIT-0 license ([`license.txt`](license.txt)).
+
+## Für Entwickler / Building
+
+- Visual Studio 2022 (C++ workload), solution `EmperorLauncher.sln`, Release/x86.
+- `package.ps1` builds and packages the zip; `fetch-graphics.ps1` adds the graphics pack. dgVoodoo2 and ReShade are taken unmodified from the [`thirdparty-v1`](../../releases/tag/thirdparty-v1) release and verified by SHA256; shaders are pinned to a commit.
+- Every push builds automatically via GitHub Actions (artifact `EmperorSpice-ci`).

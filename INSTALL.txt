@@ -1,163 +1,101 @@
 ============================================================
-  EMPEROR REBORN - How to install & play
-  Emperor: Battle for Dune in real 16:9 widescreen on modern PCs
+  EMPEROR SPICE - Installation / Installation
+  Emperor: Schlacht um Dune / Battle for Dune auf modernen PCs
 ============================================================
 
-Made by azmawee
-  GitHub:   https://github.com/azmawee
-  Facebook: https://facebook.com/azmawee
-
-Based on EmperorLauncher by Tom Mason (wheybags).
+Basiert auf / based on: Emperor Reborn von/by azmawee
+Projektseite / project page: https://github.com/badrig217/EmperorSpice
 
 
-------------------------------------------------------------
-WHAT YOU NEED FIRST
-------------------------------------------------------------
-- A Windows 10 or 11 PC.
-- Your own copy of Emperor: Battle for Dune (the ENGLISH
-  version), the original 4 CDs or disc images you can mount.
-  This tool does NOT come with the game - you must own it.
-- The official Westwood/EA v1.09 patch file: EM109EN.EXE
-  This is copyrighted by EA/Westwood, so it is NOT included
-  here. It was a free patch and is widely available online -
-  a quick web search for EM109EN.EXE will find it. Get your
-  own copy from a source you trust and drop it next to
-  EmperorReborn.exe (see STEP 1).
-  The launcher checks for it on first run and will tell you if
-  it is missing.
+============================================================
+  DEUTSCH
+============================================================
 
-That's it. You do NOT need to install any extra runtime or
-"Visual C++" thing. It just works.
+WAS DU BRAUCHST
+---------------
+- Windows 10 oder 11 (64 Bit)
+- Dein eigenes Spiel: die 4 Original-CDs (deutsch oder englisch)
+  oder ISO-Abbilder davon. Das Spiel ist NICHT enthalten.
+- Den offiziellen Patch 1.09: EM109DE.EXE (deutsch) oder
+  EM109EN.EXE (englisch). Er ist urheberrechtlich geschuetzt und
+  deshalb nicht enthalten (frueher kostenloser Download, heute
+  z. B. auf Fan-Seiten wie CNCNZ zu finden).
 
+INSTALLATION
+------------
+1. Diese ZIP in einen eigenen Ordner entpacken, z. B.
+       D:\Spiele\EmperorSpice
+   WICHTIG: keine Umlaute oder Sonderzeichen im Pfad.
 
-------------------------------------------------------------
-BEFORE YOU START - VERIFY YOUR DOWNLOAD (recommended)
-------------------------------------------------------------
-So you know the download is the real build and not a tampered
-copy, check it against the official SHA256 published on the
-site: https://azmawee.github.io/EmperorReborn/
+2. EM109DE.EXE (oder EM109EN.EXE) in denselben Ordner legen:
+       D:\Spiele\EmperorSpice\
+           EmperorSpice.exe
+           EmperorHooks.dll
+           EM109DE.EXE        <- selbst dazulegen
+           graphics\          <- Grafik-Paket
 
-  1. Verify the zip. In PowerShell:
-        Get-FileHash .\EmperorReborn-v2.4.zip -Algorithm SHA256
-     Compare the result to the hash on the site. If it does
-     not match, do not run it.
+3. CD 1 einlegen bzw. die ISO-Abbilder einbinden
+   (Doppelklick auf die ISO). Die CDs heissen EMPEROR1 bis
+   EMPEROR4, die weiteren fragt der Installer ab.
 
-  2. Extract the zip.
+4. EmperorSpice.exe starten und "Spiel jetzt hier installieren?"
+   mit OK bestaetigen.
+   Blaue Meldung "Der Computer wurde durch Windows geschuetzt"?
+   -> "Weitere Informationen" -> "Trotzdem ausfuehren".
+   (Das Programm ist nicht kostenpflichtig digital signiert.)
 
-  3. Verify the two programs. The zip ships a SHA256SUMS.txt;
-     check both files against it:
-        Get-FileHash .\EmperorReborn.exe  -Algorithm SHA256
-        Get-FileHash .\EmperorHooks.dll   -Algorithm SHA256
-     Both must match the lines in SHA256SUMS.txt.
+5. Fertig. Auf dem Desktop liegt die Verknuepfung
+   "Emperor Spice". Aufloesung waehlen, "Spielen" klicken.
+   Die CDs werden danach nicht mehr gebraucht.
 
-(EM109EN.EXE is the EA patch you supply yourself. Get it from a
-source you trust, see the note above.)
+GRAFIK-PAKET (dgVoodoo2 + ReShade)
+----------------------------------
+- Im Launcher ein-/ausschaltbar ("Grafik-Paket").
+- Im Spiel:  Rollen-Taste = Effekte ein/aus
+             Pos1         = ReShade-Menue (Schaerfe, Kontrast ...)
+- In dgVoodoo KEINE Kantenglaettung (MSAA) einschalten - das
+  Spiel haengt sonst. Kantenglaettung macht ReShade (SMAA).
 
-
-------------------------------------------------------------
-STEP 1 - PUT THE FILES SOMEWHERE
-------------------------------------------------------------
-Unzip this folder anywhere you like, for example:
-    C:\Games\EmperorReborn\
-
-Keep these files together in the same folder:
-    EmperorReborn.exe
-    EmperorHooks.dll
-    EM109EN.EXE        <- you supply this one yourself
-(If you separate them, it won't work.)
-
-
-------------------------------------------------------------
-STEP 2 - RUN IT
-------------------------------------------------------------
-Double-click  EmperorReborn.exe
-
-The first time, it will ask you to insert or mount your
-Emperor CDs one by one (Disc 1 install, then Atreides,
-Harkonnen, Ordos). Just pop them in / mount them when asked.
-It builds its own clean copy of the game for you.
-
-If EM109EN.EXE is not next to EmperorReborn.exe, the launcher
-will pop up and ask you to copy it there first.
-
-(This is a one-time thing. Next time it starts straight away.)
+PROBLEME
+--------
+- Protokoll: data\emperor.txt - bei Fragen bitte mitschicken:
+  https://github.com/badrig217/EmperorSpice/issues
+- Kleine Schrift im Spiel: Aufloesung "Hochskaliert ..., grosse UI".
+- Warnung "Falsche Game.exe-Version": "Nein" waehlen, dann wird
+  neu installiert.
 
 
-------------------------------------------------------------
-STEP 3 - PICK YOUR RESOLUTION
-------------------------------------------------------------
-In the launcher there is a "Resolution" dropdown. It defaults
-to 1280 x 720 widescreen.
+============================================================
+  ENGLISH
+============================================================
 
-  Widescreen (16:9)
-    1280 x 720   <- default, real widescreen, readable text
-    1600 x 900
-    1920 x 1080
-    2560 x 1440
-  Original 4:3
-    640 x 480 up to 1152 x 864
-  Desktop (match screen)
+YOU NEED
+--------
+- Windows 10 or 11 (64-bit)
+- Your own game: the 4 original CDs (English or German) or ISO
+  images. The game is NOT included.
+- The official v1.09 patch: EM109EN.EXE or EM109DE.EXE
+  (copyrighted, not included; still found on fan sites like CNCNZ).
 
-- Widescreen (16:9) is the big new feature. You get the real
-  wide view, more battlefield to the left and right, with no
-  stretching.
-- The 4:3 modes run the game exactly like the original.
-- Lower numbers give bigger, more readable text; higher numbers
-  are sharper with smaller UI.
-- "Desktop (match screen)" fills your monitor but the text gets
-  small on 4K. On a 4K screen pick 1280 x 720 (or 1920 x 1080)
-  with Fullscreen ticked.
+INSTALL
+-------
+1. Extract this zip to its own folder, e.g. D:\Games\EmperorSpice
+   (no special characters in the path).
+2. Put EM109EN.EXE (or EM109DE.EXE) next to EmperorSpice.exe.
+3. Insert disc 1 or mount the ISO images (EMPEROR1 - EMPEROR4).
+4. Run EmperorSpice.exe and confirm the installation.
+   Windows SmartScreen? -> "More info" -> "Run anyway".
+5. Done. Use the "Emperor Spice" desktop shortcut, pick a
+   resolution and click "Play". The CDs are no longer needed.
 
-Your choice is saved, so you only set it once.
+GRAPHICS PACK
+-------------
+- Toggle it in the launcher ("Graphics pack").
+- In game: Scroll Lock = effects on/off, Home = ReShade menu.
+- Do NOT enable MSAA in dgVoodoo (the game hangs); ReShade SMAA
+  does the anti-aliasing.
 
-Tick "Fullscreen" to fill the whole screen, then click "Play". Done!
-
-
-------------------------------------------------------------
-TIP - IF FULLSCREEN LOOKS SMALL / BOXED IN
-------------------------------------------------------------
-If you choose a low resolution + Fullscreen but the game shows
-as a small box in the middle of a big black screen, your
-graphics card scaling is turned off. Fix it once:
-
-  NVIDIA: NVIDIA Control Panel
-          -> Adjust desktop size and position
-          -> Scaling: Full-screen
-  AMD/Intel: look for a similar "Scaling Mode: Full panel"
-             option in their control panel.
-
-After that, low resolutions will properly zoom to fill the screen.
-
-
-------------------------------------------------------------
-PLAYING ONLINE (MULTIPLAYER) - QUICK VERSION
-------------------------------------------------------------
-- One person hosts: pick "Host game / singleplayer" in the launcher.
-  The host must open port 4005 (UDP and TCP) on their router.
-- Everyone else: pick "Connect to server" and type the host's
-  IP address OR a hostname / dynamic DNS name (for example
-  something.duckdns.org). Handy if the host's home IP keeps
-  changing - they share one stable name instead.
-  Use "Test connection" AFTER the host has clicked Play.
-- In the game: Multiplayer -> type any username + an 8-character
-  password -> Login -> Custom.
-- Host clicks Host; others click Refresh to see the game.
-- Host picks Deathmatch or Co-op Campaign, everyone clicks Accept,
-  host clicks Play.
-
-Don't click random buttons or change other settings - only the
-basics are wired up.
-
-
-------------------------------------------------------------
-HAVING TROUBLE?
-------------------------------------------------------------
-- "It won't start": make sure EmperorReborn.exe and
-  EmperorHooks.dll are in the SAME folder.
-- "EM109EN.EXE required" popup: copy your own EM109EN.EXE into
-  the same folder as EmperorReborn.exe.
-- Put the game in a folder with English-only characters in the
-  path (no special letters).
-- Only the English version of the game is supported.
-
-Have fun! - azmawee
+PROBLEMS
+--------
+- Log file: data\emperor.txt - attach it to an issue:
+  https://github.com/badrig217/EmperorSpice/issues
