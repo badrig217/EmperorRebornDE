@@ -439,6 +439,14 @@ LRESULT onResolutionChanged(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPara
     settings.screenHeight = resolutions[index].height;
     settings.widescreen = resolutions[index].widescreen;
     settings.upscaleToDesktop = resolutions[index].upscale;
+    // The game draws text in fixed pixels while menus and the sidebar scale with the resolution.
+    // From 1440p (rendered natively, not upscaled) the 2x fonts match the original proportions,
+    // so suggest them there. The player can still untick it afterwards.
+    if (IsWindowEnabled(largeFontCheckbox))
+    {
+      settings.largeFont = !resolutions[index].upscale && resolutions[index].height >= 1440;
+      SendMessage(largeFontCheckbox, BM_SETCHECK, settings.largeFont ? BST_CHECKED : BST_UNCHECKED, 0);
+    }
     settings.writeSettings();
   }
   return CallWindowProc(defWndProc, hwnd, message, wParam, lParam);
@@ -951,8 +959,8 @@ int wmain(int argc, wchar_t* argv[])
                                                         L"Geld-Cheat im Einzelspieler:  Strg+Umschalt+G = +25.000 Credits"),
                                         WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTOCHECKBOX, colL + S(14), exY + S(24), S(490), S(22), window, nullptr, nullptr, nullptr);
     // Greyed out when the launcher was built without the bundled fonts folder (developer builds).
-    largeFontCheckbox = CreateWindowEx(0, WC_BUTTON, T(L"Large in-game text (2x, for high resolutions)",
-                                                       L"Gro\u00dfe Schrift im Spiel (doppelt so gro\u00df, f\u00fcr hohe Aufl\u00f6sungen)"),
+    largeFontCheckbox = CreateWindowEx(0, WC_BUTTON, T(L"Large in-game text (2x, for 1440p and above)",
+                                                       L"Gro\u00dfe Schrift im Spiel (doppelt so gro\u00df, ab 1440p)"),
                                        WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTOCHECKBOX, colL + S(14), exY + S(50), S(490), S(22), window, nullptr, nullptr, nullptr);
     if (!fontPack::available(std::filesystem::path(getFolderThisExeIsIn()) / L"fonts"))
       EnableWindow(largeFontCheckbox, FALSE);
