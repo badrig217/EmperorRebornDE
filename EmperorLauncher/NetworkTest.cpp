@@ -1,4 +1,5 @@
 #include "NetworkTest.hpp"
+#include "Lang.hpp"
 #include <windows.h>
 #include <winsock.h>
 #include "../EmperorHooks/Error.hpp"
@@ -127,13 +128,16 @@ void testNetwork(HWND parent, const std::string& serverAddrString)
 
   if (!udpOk || !tcpOk)
   {
-    std::string message = std::string("UDP port 4005: ") + (udpOk ? "OK" : "FAIL") + "\n";
-    message += std::string("TCP port 4005: ") + (tcpOk ? "OK" : "FAIL") + "\n";
-    message += "\nMake sure:\n- host has the game running (clicked play, not just opened this launcher)\n- host has opened port " + std::to_string(wolPortH) + " on both UDP and TCP";
+    std::wstring message = std::wstring(L"UDP port 4005: ") + (udpOk ? L"OK" : T(L"FAIL", L"FEHLER")) + L"\n";
+    message += std::wstring(L"TCP port 4005: ") + (tcpOk ? L"OK" : T(L"FAIL", L"FEHLER")) + L"\n";
+    message += T(L"\nMake sure:\n- host has the game running (clicked play, not just opened this launcher)\n- host has opened port ",
+                 L"\nBitte pr\u00fcfen:\n- Beim Host l\u00e4uft das Spiel (auf Spielen geklickt, nicht nur den Launcher ge\u00f6ffnet)\n- Der Host hat Port ");
+    message += std::to_wstring(wolPortH);
+    message += T(L" open on both UDP and TCP", L" f\u00fcr UDP und TCP freigegeben");
 
-    MessageBoxA(parent, (message).c_str(), "Failure", 0);
+    MessageBoxW(parent, message.c_str(), T(L"Failure", L"Fehlgeschlagen"), 0);
     return;
   }
 
-  MessageBoxA(parent, "Connection succeeded", "Success", 0);
+  MessageBoxW(parent, T(L"Connection succeeded", L"Verbindung erfolgreich"), T(L"Success", L"Erfolg"), 0);
 }

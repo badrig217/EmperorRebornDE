@@ -47,6 +47,16 @@ public:
   // stays smooth instead of stepping a fixed amount per frame. On by default.
   bool smoothScroll = true;
 
+  // Launcher UI language: "de", "en", or empty (not chosen yet - follow the Windows language).
+  std::string language;
+
+  // Emperor Spice graphics pack: dgVoodoo2 (16x texture filtering) + ReShade (SMAA, contrast, sharpening).
+  // The launcher copies the bundled files into the game folder when on, and removes them when off.
+  bool graphicsPack = true;
+
+  // Single-player money cheat (Ctrl+Shift+G = +25,000 credits). Off by default, never active in multiplayer.
+  bool moneyCheat = false;
+
 public:
   void readSettings()
   {
@@ -113,6 +123,18 @@ public:
     if (smoothScrollTemp)
       smoothScroll = *smoothScrollTemp == "1";
 
+    std::optional<std::string> languageTemp = regReadString(key, "Language");
+    if (languageTemp)
+      language = *languageTemp;
+
+    std::optional<std::string> graphicsPackTemp = regReadString(key, "GraphicsPack");
+    if (graphicsPackTemp)
+      graphicsPack = *graphicsPackTemp == "1";
+
+    std::optional<std::string> moneyCheatTemp = regReadString(key, "MoneyCheat");
+    if (moneyCheatTemp)
+      moneyCheat = *moneyCheatTemp == "1";
+
     RegCloseKey(key);
   }
 
@@ -135,6 +157,9 @@ public:
     regWriteString(key, "Cutscene43", cutscene43 ? "1" : "0");
     regWriteString(key, "UpscaleToDesktop", upscaleToDesktop ? "1" : "0");
     regWriteString(key, "SmoothScroll", smoothScroll ? "1" : "0");
+    regWriteString(key, "Language", language);
+    regWriteString(key, "GraphicsPack", graphicsPack ? "1" : "0");
+    regWriteString(key, "MoneyCheat", moneyCheat ? "1" : "0");
 
     RegCloseKey(key);
   }

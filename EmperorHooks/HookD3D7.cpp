@@ -9,6 +9,7 @@
 #include <cstdint>
 #include "Error.hpp"
 #include "Log.hpp"
+#include "MoneyCheat.hpp"
 #include "PickingTracer.hpp"
 #include "MovieFix.hpp"
 #include "SmoothScroll.hpp"
@@ -39,10 +40,18 @@ void* OriginalPointer_IDirect3DDevice7_EndScene = nullptr;
 HRESULT(STDMETHODCALLTYPE* Real_IDirect3DDevice7_EndScene)(IDirect3DDevice7* This) = nullptr;
 HRESULT STDMETHODCALLTYPE My_IDirect3DDevice7_EndScene(IDirect3DDevice7* This)
 {
+  static bool loggedFirstFrame = false;
+  if (!loggedFirstFrame)
+  {
+    loggedFirstFrame = true;
+    Log("D3D7: first EndScene (rendering is running)\n");
+  }
+
   if (gWidescreen)
     tracerNoteThread();
 
   smoothScrollUpdateFrame(); // refresh the frame-time scroll multiplier (no-op unless smooth scroll is on)
+  moneyCheatUpdateFrame();   // Ctrl+Shift+G money cheat (no-op unless enabled in the launcher)
 
   LARGE_INTEGER nextFrameTime = {};
   nextFrameTime.QuadPart = lastFrameTime.QuadPart + qpcFreq.QuadPart / targetFps;
@@ -199,8 +208,10 @@ HRESULT(STDMETHODCALLTYPE* Real_IDirect3D7_CreateDevice)(IDirect3D7* This, REFCL
 HRESULT STDMETHODCALLTYPE My_IDirect3D7_CreateDevice(IDirect3D7* This, REFCLSID rclsid, LPDIRECTDRAWSURFACE7 lpDDS, LPDIRECT3DDEVICE7* lplpD3DDevice)
 {
   IDirect3DDevice7* device = *lplpD3DDevice;
+  Log("D3D7: CreateDevice ...\n");
   HRESULT result = Real_IDirect3D7_CreateDevice(This, rclsid, lpDDS, &device);
   *lplpD3DDevice = device;
+  Log("D3D7: CreateDevice returned 0x%08lx, device %p\n", (unsigned long)result, (void*)device);
 
   if (OriginalPointer_IDirect3DDevice7_EndScene)
     release_assert(device->lpVtbl->EndScene == OriginalPointer_IDirect3DDevice7_EndScene);
@@ -247,8 +258,10 @@ HRESULT(WINAPI* RealDirectDrawCreateEx)(GUID FAR* lpGuid, LPVOID* lplpDD, REFIID
 HRESULT WINAPI MyDirectDrawCreateEx(GUID FAR* lpGuid, LPVOID* lplpDD, REFIID iid, IUnknown FAR* pUnkOuter)
 {
   IDirectDraw7* directDraw = *((IDirectDraw7**)lplpDD);
+  Log("D3D7: DirectDrawCreateEx ...\n");
   HRESULT result = RealDirectDrawCreateEx(lpGuid, (void**)&directDraw, iid, pUnkOuter);
   *((IDirectDraw7**)lplpDD) = directDraw;
+  Log("D3D7: DirectDrawCreateEx returned 0x%08lx\n", (unsigned long)result);
 
   if (directDraw)
   {
@@ -287,6 +300,12 @@ void HookD3D7(bool widescreen, bool pillarbox, bool cutscene43, bool upscaleToDe
 
   // For some reason, this doesn't work if I use normal dynamic linking to fetch the original function pointer
   HMODULE ddraw = LoadLibraryA("DDRAW.DLL");
+  {
+    // Log which DDRAW.DLL is used: the system one or a wrapper (e.g. dgVoodoo2) in the game folder.
+    char ddrawPath[MAX_PATH] = {};
+    GetModuleFileNameA(ddraw, ddrawPath, MAX_PATH);
+    Log("D3D7: using %s\n", ddrawPath);
+  }
   RealDirectDrawCreateEx = (HRESULT(WINAPI*)(GUID FAR*, LPVOID*, REFIID, IUnknown FAR*)) GetProcAddress(ddraw, "DirectDrawCreateEx");
 
   DetourTransactionBegin();

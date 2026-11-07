@@ -1,4 +1,4 @@
-Emperor Reborn - Third-Party Notices
+Emperor Spice - Third-Party Notices
 ====================================
 
 This software incorporates components from the projects listed below. The original
@@ -61,3 +61,21 @@ NOT REDISTRIBUTED HERE
      v1.09 patch (EM109EN.EXE) are the property of Electronic Arts / Westwood
      Studios and are NOT included in this repository or distributed by this
      project. You must own the game.
+
+--------------------------------------------------------------------------------
+Graphics pack (folder "graphics", downloaded unmodified at build time from the
+official sources by fetch-graphics.ps1 - see that script for the exact versions)
+
+a) dgVoodoo2 by Dege - http://dege.freeweb.hu/dgVoodoo2/
+   Freeware. Redistributed as individual components (DDraw.dll, D3DImm.dll,
+   dgVoodoo.conf) specifically for use with this game, as permitted by the
+   author's redistribution terms. Copyright (c) Dege. The original readme is in
+   graphics\licenses.
+
+b) ReShade by crosire - https://reshade.me
+   ReShade32.dll. Licensed under the BSD 3-Clause License,
+   Copyright (c) 2014 Patrick Mours.
+
+c) ReShade shaders: crosire/reshade-shaders (incl. SMAA by Jorge Jimenez et al.,
+   MIT License) and CeeJayDK/SweetFX (MIT License). Their license files are
+   included in graphics\licenses.

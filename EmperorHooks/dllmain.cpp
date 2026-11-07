@@ -13,6 +13,7 @@
 #include "SmoothScroll.hpp"
 #include "WrapWinsock.hpp"
 #include "Log.hpp"
+#include "MoneyCheat.hpp"
 #include "PatchWol.hpp"
 #include "Error.hpp"
 #include <optional>
@@ -65,6 +66,28 @@ void setupConsole()
   }
 }
 
+// Optional ReShade support. With a DirectX wrapper such as dgVoodoo2 the usual ReShade proxy DLLs
+// (dxgi.dll / d3d11.dll in the game folder) are not picked up, because the wrapper talks to the system
+// Direct3D 11 directly. Loading ReShade32.dll into the process ourselves - the same thing ReShade's own
+// injector does - lets it install its hooks before the wrapper creates its Direct3D 11 device.
+// Only happens if the user put ReShade32.dll next to Game.exe; otherwise nothing changes.
+static void loadReShade()
+{
+  if (GetFileAttributesA("ReShade32.dll") == INVALID_FILE_ATTRIBUTES)
+  {
+    char cwd[MAX_PATH] = {};
+    GetCurrentDirectoryA(MAX_PATH, cwd);
+    Log("ReShade: no ReShade32.dll in %s (optional)\n", cwd);
+    return;
+  }
+
+  char fullPath[MAX_PATH] = {};
+  GetFullPathNameA("ReShade32.dll", MAX_PATH, fullPath, nullptr);
+  HMODULE reshade = LoadLibraryA(fullPath);
+  Log("ReShade: loading %s -> %s (error %lu)\n", fullPath, reshade ? "OK" : "FAILED",
+    reshade ? 0ul : (unsigned long)GetLastError());
+}
+
 void runHooks()
 {
   Settings settings;
@@ -76,6 +99,8 @@ void runHooks()
   SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE);
 
   setupConsole();
+
+  loadReShade();
 
   DetourTransactionBegin();
   DetourUpdateThread(GetCurrentThread());
@@ -101,6 +126,9 @@ void runHooks()
   // Framerate-normalized smooth map scrolling. Independent of widescreen, so it is installed here on its
   // own setting. Patches Game.exe once; the per-frame multiplier is driven from EndScene.
   initSmoothScroll(settings.smoothScroll);
+
+  // Optional single-player money cheat (polled from EndScene).
+  initMoneyCheat(settings.moneyCheat);
 
   // In-game 2D HUD/sidebar widescreen fix, applied to the loaded image. Capture the vanilla bytes now;
   // it is toggled on ONLY while in a mission (see PickingTracer) so the front-end menu stays

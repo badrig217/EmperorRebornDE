@@ -2,6 +2,9 @@
 #include <string>
 #include "../EmperorHooks/Error.hpp"
 #include "resource.h"
+#include "Lang.hpp"
+#include "IsoReader.hpp"
+#include "Installer.hpp"
 #include <filesystem>
 #include <fdi.h>
 #include <fcntl.h>
@@ -23,20 +26,45 @@ void extractPatchExe(std::string path)
   // Copyright note: the official Westwood/EA v1.09 patch (EM109EN.EXE) is NOT
   // bundled with this program because it is copyrighted by EA/Westwood. The user
   // must supply their own copy by placing it next to the launcher executable.
-  std::string sourcePath = getExeDir() + "\\EM109EN.EXE";
+  //
+  // Both the English (EM109EN.EXE) and the German (EM109DE.EXE) v1.09 patch are accepted:
+  // applied to the respective CD install they produce a byte-identical Game.exe (same MD5),
+  // the language only lives in the data files. So the German patch works unchanged.
+  // The patch matching the chosen launcher language is preferred, the other one is used as a fallback.
+  const char* const patchNames[] = {
+    gLang == Lang::DE ? "EM109DE.EXE" : "EM109EN.EXE",
+    gLang == Lang::DE ? "EM109EN.EXE" : "EM109DE.EXE" };
 
-  while (!std::filesystem::exists(sourcePath))
+  std::string sourcePath;
+  while (true)
   {
-    std::string message =
-      "The official Westwood/EA v1.09 patch is required but was not found.\n\n"
-      "Please place your own copy of EM109EN.EXE next to EmperorReborn.exe:\n\n    " +
-      sourcePath + "\n\n"
-      "This file is copyrighted by EA/Westwood and is not distributed with Emperor "
-      "Reborn. See README.txt for details.\n\n"
-      "Click OK after you have copied the file, or Cancel to quit.";
+    for (const char* name : patchNames)
+    {
+      std::string candidate = getExeDir() + "\\" + name;
+      if (std::filesystem::exists(candidate))
+      {
+        sourcePath = candidate;
+        break;
+      }
+    }
+    if (!sourcePath.empty())
+      break;
 
-    if (MessageBoxA(nullptr, message.c_str(),
-          "Emperor Reborn - EM109EN.EXE required",
+    std::wstring message = std::wstring(T(
+      L"The official Westwood/EA v1.09 patch was not found.\n\n"
+      L"Please place your own EM109EN.EXE (English) or EM109DE.EXE (German)\n"
+      L"next to EmperorReborn.exe in this folder:\n\n    ",
+      L"Der offizielle Westwood/EA-Patch 1.09 wurde nicht gefunden.\n\n"
+      L"Bitte lege deine eigene EM109DE.EXE (deutsch) oder EM109EN.EXE (englisch)\n"
+      L"neben EmperorReborn.exe in diesen Ordner:\n\n    ")) +
+      toWide(getExeDir()) + T(
+      L"\n\nThis file is copyrighted by EA/Westwood and is not distributed with Emperor Reborn.\n\n"
+      L"Click OK after you have copied the file, or Cancel to quit.",
+      L"\n\nDie Datei ist urheberrechtlich gesch\u00fctzt (EA/Westwood) und wird nicht mitgeliefert.\n\n"
+      L"Klicke auf OK, sobald du die Datei kopiert hast, oder auf Abbrechen zum Beenden.");
+
+    if (MessageBoxW(nullptr, message.c_str(),
+          T(L"Emperor Reborn - v1.09 patch required", L"Emperor Reborn - Patch 1.09 ben\u00f6tigt"),
           MB_OKCANCEL | MB_ICONWARNING) == IDCANCEL)
       exit(1);
   }
@@ -396,14 +424,20 @@ std::string getDiskPath(const std::string& volumeName, const std::string& friend
     }
 
     printf("Not found!\n");
-    MessageBoxA(nullptr, ("Please insert / mount " + friendlyName).c_str(), "Emperor Reborn", MB_OK);
+    MessageBoxW(nullptr, (T(L"Please insert / mount ", L"Bitte lege ein bzw. binde ein: ") + toWide(friendlyName)).c_str(), L"Emperor Spice", MB_OK);
   }
 }
 
 void copyFile(const std::string& source, const std::string& destination)
 {
   printf("Copying %s\n", destination.c_str());
-  std::filesystem::copy(source, destination);
+  // Copying a file into an existing folder: name the target explicitly (same result as
+  // std::filesystem::copy(file, folder) with MSVC, but works the same everywhere). A folder as
+  // source (WOLAPI) keeps the old behaviour: its files are copied into the destination folder.
+  std::filesystem::path src(source), dst(destination);
+  if (std::filesystem::is_regular_file(src) && std::filesystem::is_directory(dst))
+    dst /= src.filename();
+  std::filesystem::copy(src, dst);
 }
 
 void copyFolderRecursive(const std::string& source, const std::string& destination)
@@ -422,13 +456,43 @@ void copyFolderRecursive(const std::string& source, const std::string& destinati
   }
 }
 
-void installEmperor(const std::string& installDir)
+// Extracts one disc image to destDir, printing progress to the console window.
+static bool extractIso(const std::wstring& isoPath, const std::string& label, const std::string& destDir)
+{
+  iso::Image image{ std::filesystem::path(isoPath) };
+  if (!image.valid() || image.volumeLabel() != label)
+    return false;
+  printf("Extracting %s from %ls\n", label.c_str(), isoPath.c_str());
+  return image.extractAll(std::filesystem::path(destDir), [](const std::wstring& file) { printf("  %ls\n", file.c_str()); });
+}
+
+static void isoError(const std::wstring& isoPath)
+{
+  MessageBoxW(nullptr, (T(L"The ISO image could not be read:\n\n", L"Das ISO-Abbild konnte nicht gelesen werden:\n\n") + isoPath).c_str(),
+              L"Emperor Spice", MB_OK | MB_ICONERROR);
+}
+
+bool installEmperor(const std::string& installDir, const std::map<std::string, std::wstring>& isoImages)
 {
   std::filesystem::create_directories(installDir);
 
   // Base install + patch to v1.09
   {
-    std::string diskPath = getDiskPath("EMPEROR1", "disc 1 (Install disc)");
+    std::string diskPath;
+    std::string isoTemp = installDir + "\\_iso_disc1";
+    auto iso1 = isoImages.find("EMPEROR1");
+    if (iso1 != isoImages.end())
+    {
+      // Disc 1 is unpacked to a temporary folder first; the normal install steps then read from there.
+      if (!extractIso(iso1->second, "EMPEROR1", isoTemp))
+      {
+        isoError(iso1->second);
+        return false;
+      }
+      diskPath = isoTemp;
+    }
+    else
+      diskPath = getDiskPath("EMPEROR1", gLang == Lang::DE ? "CD 1 (Installations-CD)" : "disc 1 (Install disc)");
 
     copyFolderRecursive(diskPath + "\\INSTALL\\DATA", installDir + "\\DATA");
     copyFile(diskPath + "\\INSTALL\\EMPEROR.EXE", installDir);
@@ -460,24 +524,69 @@ void installEmperor(const std::string& installDir)
     ExtractCabinetFiles("Game1.cab", (diskPath + "\\INSTALL\\").c_str(), installDir.c_str());
 
     patch(installDir);
+
+    if (iso1 != isoImages.end())
+    {
+      std::error_code ec;
+      std::filesystem::remove_all(isoTemp, ec);
+    }
   }
 
   // Atreides data
   {
-    std::string diskPath = getDiskPath("EMPEROR2", "disc 2 (Atredies)");
-    copyFolderRecursive(diskPath, installDir + "\\disks\\EMPEROR2");
+    auto iso = isoImages.find("EMPEROR2");
+    if (iso != isoImages.end())
+    {
+      // Discs 2-4 are copied 1:1, so the image is unpacked straight into place.
+      if (!extractIso(iso->second, "EMPEROR2", installDir + "\\disks\\EMPEROR2"))
+      {
+        isoError(iso->second);
+        return false;
+      }
+    }
+    else
+    {
+      std::string diskPath = getDiskPath("EMPEROR2", gLang == Lang::DE ? "CD 2 (Atreides)" : "disc 2 (Atreides)");
+      copyFolderRecursive(diskPath, installDir + "\\disks\\EMPEROR2");
+    }
   }
 
   // Harkonnen data
   {
-    std::string diskPath = getDiskPath("EMPEROR3", "disc 3 (Harkonnen)");
-    copyFolderRecursive(diskPath, installDir + "\\disks\\EMPEROR3");
+    auto iso = isoImages.find("EMPEROR3");
+    if (iso != isoImages.end())
+    {
+      // Discs 2-4 are copied 1:1, so the image is unpacked straight into place.
+      if (!extractIso(iso->second, "EMPEROR3", installDir + "\\disks\\EMPEROR3"))
+      {
+        isoError(iso->second);
+        return false;
+      }
+    }
+    else
+    {
+      std::string diskPath = getDiskPath("EMPEROR3", gLang == Lang::DE ? "CD 3 (Harkonnen)" : "disc 3 (Harkonnen)");
+      copyFolderRecursive(diskPath, installDir + "\\disks\\EMPEROR3");
+    }
   }
 
   // Ordos data
   {
-    std::string diskPath = getDiskPath("EMPEROR4", "disc 4 (Ordos)");
-    copyFolderRecursive(diskPath, installDir + "\\disks\\EMPEROR4");
+    auto iso = isoImages.find("EMPEROR4");
+    if (iso != isoImages.end())
+    {
+      // Discs 2-4 are copied 1:1, so the image is unpacked straight into place.
+      if (!extractIso(iso->second, "EMPEROR4", installDir + "\\disks\\EMPEROR4"))
+      {
+        isoError(iso->second);
+        return false;
+      }
+    }
+    else
+    {
+      std::string diskPath = getDiskPath("EMPEROR4", gLang == Lang::DE ? "CD 4 (Ordos)" : "disc 4 (Ordos)");
+      copyFolderRecursive(diskPath, installDir + "\\disks\\EMPEROR4");
+    }
   }
 
   // resource.cfg, patched to point at the disk directories we just created
@@ -487,4 +596,5 @@ void installEmperor(const std::string& installDir)
     release_assert(fwrite(resourceCfg.data(), 1, resourceCfg.size(), f) == resourceCfg.size());
     fclose(f);
   }
+  return true;
 }

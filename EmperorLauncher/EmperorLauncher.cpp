@@ -6,6 +6,8 @@
 #include <string>
 #include <CommCtrl.h>
 #include <map>
+#include <algorithm>
+#include <cwctype>
 #include <optional>
 #include <iterator>
 #include "../EmperorHooks/Settings.hpp"
@@ -16,6 +18,16 @@
 #include "md5.h"
 #include "NetworkTest.hpp"
 #include "resource.h"
+#include "Lang.hpp"
+#include "GraphicsPack.hpp"
+#include "Shortcut.hpp"
+#include "IsoReader.hpp"
+#include <commdlg.h>
+#pragma comment(lib, "comdlg32.lib")
+
+// Modern Windows look for buttons, checkboxes and combo boxes (Common Controls v6). Without this the
+// launcher's controls are drawn in the Windows 95 style.
+#pragma comment(linker, "\"/manifestdependency:type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 
 
 HANDLE globalCommsFileMappingHandle = nullptr;
@@ -209,26 +221,83 @@ int getMainMonitorHeight()
 // higher render gives a sharper (smaller) UI. They are deliberately kept below true 4K, since rendering
 // at the screen's own resolution would be a 1:1 present and bring the tiny fonts straight back. Pick the
 // tier at or below your monitor: 4K render on a 4K screen would not upscale.
-struct Resolution { int width; int height; bool widescreen; bool upscale; const wchar_t* label; };
+struct Resolution { int width; int height; bool widescreen; bool upscale; const wchar_t* label; const wchar_t* labelDe; };
 const Resolution resolutions[] =
 {
-  { 640, 480, false, false, L"640 x 480" },
-  { 800, 600, false, false, L"800 x 600" },
-  { 1024, 768, false, false, L"1024 x 768" },
-  { 1152, 864, false, false, L"1152 x 864" },
-  { 1280, 720, true, false, L"1280 x 720 (widescreen)" },
-  { 1600, 900, true, false, L"1600 x 900 (widescreen)" },
-  { 1920, 1080, true, false, L"1920 x 1080 (widescreen)" },
-  { 2560, 1440, true, false, L"2560 x 1440 (widescreen)" },
-  { 2560, 1440, true, true, L"Upscale 4K, big UI" },
-  { 1920, 1080, true, true, L"Upscale 2K, big UI" },
-  { 1280, 720, true, true, L"Upscale 1K, big UI" },
-  { 0, 0, false, false, L"Desktop" },
+  { 640, 480, false, false, L"640 x 480", L"640 x 480" },
+  { 800, 600, false, false, L"800 x 600", L"800 x 600" },
+  { 1024, 768, false, false, L"1024 x 768", L"1024 x 768" },
+  { 1152, 864, false, false, L"1152 x 864", L"1152 x 864" },
+  { 1280, 720, true, false, L"1280 x 720 (widescreen)", L"1280 x 720 (Breitbild)" },
+  { 1600, 900, true, false, L"1600 x 900 (widescreen)", L"1600 x 900 (Breitbild)" },
+  { 1920, 1080, true, false, L"1920 x 1080 (widescreen)", L"1920 x 1080 (Breitbild)" },
+  { 2560, 1440, true, false, L"2560 x 1440 (widescreen)", L"2560 x 1440 (Breitbild)" },
+  { 2560, 1440, true, true, L"Upscale 4K, big UI", L"Hochskaliert 4K, gro\u00dfe UI" },
+  { 1920, 1080, true, true, L"Upscale 2K, big UI", L"Hochskaliert 2K, gro\u00dfe UI" },
+  { 1280, 720, true, true, L"Upscale 1K, big UI", L"Hochskaliert 1K, gro\u00dfe UI" },
+  { 0, 0, false, false, L"Desktop", L"Desktop" },
 };
 
 
 WNDPROC defWndProc = nullptr;
 HWND window = nullptr;
+
+// --- Look & feel ---------------------------------------------------------------------------------
+UINT gDpi = 96;
+inline int S(int v) { return MulDiv(v, int(gDpi), 96); } // scale 96-DPI layout pixels to the system DPI
+
+HFONT gUiFont = nullptr;
+HFONT gLinkFont = nullptr;
+int gHeaderBandHeight = 0;
+HWND gHeaderPic = nullptr;
+HBITMAP gHeaderBmp = nullptr;
+
+void drawHeader(const DRAWITEMSTRUCT* item)
+{
+  if (!gHeaderBmp)
+    return;
+  BITMAP bm = {};
+  GetObjectW(gHeaderBmp, sizeof(bm), &bm);
+  HDC mem = CreateCompatibleDC(item->hDC);
+  HGDIOBJ old = SelectObject(mem, gHeaderBmp);
+  SetStretchBltMode(item->hDC, HALFTONE);
+  SetBrushOrgEx(item->hDC, 0, 0, nullptr);
+  const RECT& rc = item->rcItem;
+  StretchBlt(item->hDC, rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top, mem, 0, 0, bm.bmWidth, bm.bmHeight, SRCCOPY);
+  SelectObject(mem, old);
+  DeleteDC(mem);
+}
+HBRUSH gBackgroundBrush = CreateSolidBrush(RGB(250, 249, 247));
+const COLORREF gTextColor = RGB(32, 32, 32);
+const COLORREF gLinkColor = RGB(180, 90, 20);
+
+HFONT makeFont(int pointSize, int weight, bool underline = false)
+{
+  return CreateFontW(-MulDiv(pointSize, int(gDpi), 72), 0, 0, 0, weight, FALSE, underline, FALSE, DEFAULT_CHARSET,
+                     OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH, L"Segoe UI");
+}
+
+BOOL CALLBACK setFontOnChild(HWND child, LPARAM font)
+{
+  SendMessageW(child, WM_SETFONT, static_cast<WPARAM>(font), TRUE);
+  return TRUE;
+}
+
+// Light window body with a dark band behind the header banner (same gradient as the banner itself).
+void paintBackground(HWND hwnd, HDC dc)
+{
+  RECT rc;
+  GetClientRect(hwnd, &rc);
+  FillRect(dc, &rc, gBackgroundBrush);
+  for (int y = 0; y < gHeaderBandHeight; y++)
+  {
+    float t = float(y) / float(std::max(1, gHeaderBandHeight - 1));
+    HBRUSH b = CreateSolidBrush(RGB(int(30 - 18 * t), int(20 - 11 * t), int(16 - 8 * t)));
+    RECT line = { rc.left, y, rc.right, y + 1 };
+    FillRect(dc, &line, b);
+    DeleteObject(b);
+  }
+}
 
 HWND fullscreenCheckbox = nullptr;
 HWND resolutionCombo = nullptr;
@@ -249,6 +318,13 @@ HWND forceCursorVisibleCheckbox = nullptr;
 HWND disableCursorCaptureCheckbox = nullptr;
 HWND cutscene43Checkbox = nullptr;
 HWND smoothScrollCheckbox = nullptr;
+HWND languageCombo = nullptr;
+HWND graphicsPackCheckbox = nullptr;
+HWND shortcutButton = nullptr;
+HWND moneyCheatCheckbox = nullptr;
+
+// Command line argument (custom install dir) we were started with, so a language switch can restart us identically.
+std::wstring gInstallDirArg;
 
 bool playClicked = false;
 
@@ -291,6 +367,8 @@ void loadAndApplySettings()
   SendMessageA(disableCursorCaptureCheckbox, BM_SETCHECK, settings.disableCursorCapture ? BST_CHECKED : BST_UNCHECKED, 0);
   SendMessageA(cutscene43Checkbox, BM_SETCHECK, settings.cutscene43 ? BST_CHECKED : BST_UNCHECKED, 0);
   SendMessageA(smoothScrollCheckbox, BM_SETCHECK, settings.smoothScroll ? BST_CHECKED : BST_UNCHECKED, 0);
+  SendMessageA(graphicsPackCheckbox, BM_SETCHECK, settings.graphicsPack ? BST_CHECKED : BST_UNCHECKED, 0);
+  SendMessageA(moneyCheatCheckbox, BM_SETCHECK, settings.moneyCheat ? BST_CHECKED : BST_UNCHECKED, 0);
 
   refreshDerivedState();
 }
@@ -325,6 +403,20 @@ LRESULT onSmoothScrollCheckboxClicked(HWND hwnd, UINT message, WPARAM wParam, LP
   settings.smoothScroll = SendMessage(smoothScrollCheckbox, BM_GETCHECK, 0, 0) == BST_CHECKED;
   settings.writeSettings();
 
+  return CallWindowProc(defWndProc, hwnd, message, wParam, lParam);
+}
+
+LRESULT onGraphicsPackCheckboxClicked(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+  settings.graphicsPack = SendMessage(graphicsPackCheckbox, BM_GETCHECK, 0, 0) == BST_CHECKED;
+  settings.writeSettings();
+  return CallWindowProc(defWndProc, hwnd, message, wParam, lParam);
+}
+
+LRESULT onMoneyCheatCheckboxClicked(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+  settings.moneyCheat = SendMessage(moneyCheatCheckbox, BM_GETCHECK, 0, 0) == BST_CHECKED;
+  settings.writeSettings();
   return CallWindowProc(defWndProc, hwnd, message, wParam, lParam);
 }
 
@@ -380,6 +472,28 @@ LRESULT onDisableCursorCaptureCheckboxClicked(HWND hwnd, UINT message, WPARAM wP
   return CallWindowProc(defWndProc, hwnd, message, wParam, lParam);
 }
 
+// Switching the language restarts the launcher, so every label is simply recreated in the new language.
+LRESULT onLanguageChanged(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+  int index = int(SendMessageA(languageCombo, CB_GETCURSEL, 0, 0));
+  Lang chosen = index == 1 ? Lang::DE : Lang::EN;
+  if (chosen != gLang)
+  {
+    settings.language = languageToSetting(chosen);
+    settings.writeSettings();
+
+    wchar_t exePath[MAX_PATH] = {};
+    GetModuleFileNameW(nullptr, exePath, MAX_PATH);
+    std::wstring args = gInstallDirArg.empty() ? std::wstring() : (L"\"" + gInstallDirArg + L"\"");
+    ShellExecuteW(nullptr, L"open", exePath, args.empty() ? nullptr : args.c_str(), nullptr, SW_SHOWNORMAL);
+
+    DestroyWindow(window);
+    PostQuitMessage(0);
+    return 0;
+  }
+  return CallWindowProc(defWndProc, hwnd, message, wParam, lParam);
+}
+
 LRESULT OnWindowClose(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
   PostQuitMessage(0);
@@ -391,6 +505,15 @@ LRESULT OnPlayClicked(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
   playClicked = true;
   DestroyWindow(window);
   PostQuitMessage(0);
+  return CallWindowProc(defWndProc, hwnd, message, wParam, lParam);
+}
+
+LRESULT OnShortcutClicked(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+  if (createDesktopShortcut())
+    MessageBoxW(window, T(L"The shortcut \"Emperor Spice\" was created on your desktop.", L"Die Verkn\u00fcpfung \"Emperor Spice\" wurde auf dem Desktop angelegt."), L"Emperor Spice", MB_OK | MB_ICONINFORMATION);
+  else
+    MessageBoxW(window, T(L"The desktop shortcut could not be created.", L"Die Desktop-Verkn\u00fcpfung konnte nicht angelegt werden."), L"Emperor Spice", MB_OK | MB_ICONWARNING);
   return CallWindowProc(defWndProc, hwnd, message, wParam, lParam);
 }
 
@@ -408,14 +531,44 @@ LRESULT onLinkClicked(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam, con
 }
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
+  if (hwnd == window && message == WM_ERASEBKGND)
+  {
+    paintBackground(hwnd, reinterpret_cast<HDC>(wParam));
+    return 1;
+  }
+  if (hwnd == window && (message == WM_CTLCOLORSTATIC || message == WM_CTLCOLORBTN))
+  {
+    HDC dc = reinterpret_cast<HDC>(wParam);
+    HWND control = reinterpret_cast<HWND>(lParam);
+    SetBkMode(dc, TRANSPARENT);
+    SetTextColor(dc, (control == githubLink || control == facebookLink) ? gLinkColor : gTextColor);
+    return reinterpret_cast<LRESULT>(gBackgroundBrush);
+  }
+  if (hwnd == window && message == WM_DRAWITEM && reinterpret_cast<const DRAWITEMSTRUCT*>(lParam)->hwndItem == gHeaderPic)
+  {
+    drawHeader(reinterpret_cast<const DRAWITEMSTRUCT*>(lParam));
+    return TRUE;
+  }
+  if (hwnd == window && message == WM_SETCURSOR)
+  {
+    HWND over = reinterpret_cast<HWND>(wParam);
+    if (over == githubLink || over == facebookLink)
+    {
+      SetCursor(LoadCursor(nullptr, IDC_HAND));
+      return TRUE;
+    }
+  }
+
   if (message == WM_CLOSE && hwnd == window) return OnWindowClose(hwnd, message, wParam, lParam);
 
-  if (message == WM_COMMAND && HIWORD(wParam) == STN_CLICKED && reinterpret_cast<HWND>(lParam) == githubLink) return onLinkClicked(hwnd, message, wParam, lParam, "https://github.com/azmawee");
-  if (message == WM_COMMAND && HIWORD(wParam) == STN_CLICKED && reinterpret_cast<HWND>(lParam) == facebookLink) return onLinkClicked(hwnd, message, wParam, lParam, "https://facebook.com/azmawee");
+  if (message == WM_COMMAND && HIWORD(wParam) == STN_CLICKED && reinterpret_cast<HWND>(lParam) == githubLink) return onLinkClicked(hwnd, message, wParam, lParam, "https://github.com/azmawee/EmperorReborn");
+  if (message == WM_COMMAND && HIWORD(wParam) == STN_CLICKED && reinterpret_cast<HWND>(lParam) == facebookLink) return onLinkClicked(hwnd, message, wParam, lParam, "https://github.com/badrig217/EmperorSpice");
 
   if (message == WM_COMMAND && HIWORD(wParam) == BN_CLICKED && reinterpret_cast<HWND>(lParam) == fullscreenCheckbox) return onFullscreenCheckboxClicked(hwnd, message, wParam, lParam);
   if (message == WM_COMMAND && HIWORD(wParam) == BN_CLICKED && reinterpret_cast<HWND>(lParam) == cutscene43Checkbox) return onCutscene43CheckboxClicked(hwnd, message, wParam, lParam);
+  if (message == WM_COMMAND && HIWORD(wParam) == BN_CLICKED && reinterpret_cast<HWND>(lParam) == graphicsPackCheckbox) return onGraphicsPackCheckboxClicked(hwnd, message, wParam, lParam);
   if (message == WM_COMMAND && HIWORD(wParam) == BN_CLICKED && reinterpret_cast<HWND>(lParam) == smoothScrollCheckbox) return onSmoothScrollCheckboxClicked(hwnd, message, wParam, lParam);
+  if (message == WM_COMMAND && HIWORD(wParam) == CBN_SELCHANGE && reinterpret_cast<HWND>(lParam) == languageCombo) return onLanguageChanged(hwnd, message, wParam, lParam);
   if (message == WM_COMMAND && HIWORD(wParam) == CBN_SELCHANGE && reinterpret_cast<HWND>(lParam) == resolutionCombo) return onResolutionChanged(hwnd, message, wParam, lParam);
   if (message == WM_COMMAND && HIWORD(wParam) == BN_CLICKED && reinterpret_cast<HWND>(lParam) == hostGameRadio) return onServerOrClientRadioClicked(hwnd, message, wParam, lParam);
   if (message == WM_COMMAND && HIWORD(wParam) == BN_CLICKED && reinterpret_cast<HWND>(lParam) == connectToServerRadio) return onServerOrClientRadioClicked(hwnd, message, wParam, lParam);
@@ -424,6 +577,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
   if (message == WM_COMMAND && HIWORD(wParam) == BN_CLICKED && reinterpret_cast<HWND>(lParam) == pauseOnStartupCheckbox) return onPauseOnStartupCheckboxClicked(hwnd, message, wParam, lParam);
   if (message == WM_COMMAND && HIWORD(wParam) == BN_CLICKED && reinterpret_cast<HWND>(lParam) == forceCursorVisibleCheckbox) return onForceCursorVisibleCheckboxClicked(hwnd, message, wParam, lParam);
   if (message == WM_COMMAND && HIWORD(wParam) == BN_CLICKED && reinterpret_cast<HWND>(lParam) == disableCursorCaptureCheckbox) return onDisableCursorCaptureCheckboxClicked(hwnd, message, wParam, lParam);
+  if (message == WM_COMMAND && HIWORD(wParam) == BN_CLICKED && reinterpret_cast<HWND>(lParam) == moneyCheatCheckbox) return onMoneyCheatCheckboxClicked(hwnd, message, wParam, lParam);
+  if (message == WM_COMMAND && HIWORD(wParam) == BN_CLICKED && reinterpret_cast<HWND>(lParam) == shortcutButton) return OnShortcutClicked(hwnd, message, wParam, lParam);
   if (message == WM_COMMAND && HIWORD(wParam) == BN_CLICKED && reinterpret_cast<HWND>(lParam) == testNetworkButton) return OnTestNetworkClicked(hwnd, message, wParam, lParam);
 
   return CallWindowProc(defWndProc, hwnd, message, wParam, lParam);
@@ -461,11 +616,136 @@ std::string getMd5OfFile(const std::string& path)
 }
 
 
+// Adds every .iso in the given folders whose volume label is one of the four Emperor discs and that is
+// not assigned yet. So picking a single image is enough when all four lie in the same folder.
+void addIsoImagesFromFolders(const std::vector<std::wstring>& files, std::map<std::string, std::wstring>& images)
+{
+  std::vector<std::filesystem::path> folders;
+  for (const std::wstring& file : files)
+  {
+    std::filesystem::path folder = std::filesystem::path(file).parent_path();
+    if (std::find(folders.begin(), folders.end(), folder) == folders.end())
+      folders.push_back(folder);
+  }
+  for (const auto& folder : folders)
+  {
+    std::error_code ec;
+    for (const auto& entry : std::filesystem::directory_iterator(folder, ec))
+    {
+      std::wstring ext = entry.path().extension().wstring();
+      for (auto& c : ext) c = towlower(c);
+      if (!entry.is_regular_file(ec) || ext != L".iso")
+        continue;
+      std::string label = iso::emperorDisc(entry.path());
+      if (!label.empty() && !images.count(label))
+        images[label] = entry.path().wstring();
+    }
+  }
+}
+
+// Lets the player pick the ISO images of the 4 discs. Each file is identified by its volume label
+// (EMPEROR1..EMPEROR4), so the order and file names do not matter. Discs without an image are read
+// from a CD drive later. Returns false if the player cancelled.
+bool selectIsoImages(std::map<std::string, std::wstring>& images)
+{
+  while (true)
+  {
+    std::vector<wchar_t> buffer(64 * 1024, L'\0');
+    OPENFILENAMEW ofn = {};
+    ofn.lStructSize = sizeof(ofn);
+    ofn.lpstrFilter = L"ISO (*.iso)\0*.iso\0*.*\0*.*\0\0";
+    ofn.lpstrFile = buffer.data();
+    ofn.nMaxFile = DWORD(buffer.size());
+    ofn.lpstrTitle = T(L"Select an ISO image of the game (the other discs in the same folder are found automatically)",
+                       L"Ein ISO-Abbild des Spiels ausw\u00e4hlen (die anderen CDs im selben Ordner werden automatisch gefunden)");
+    ofn.Flags = OFN_ALLOWMULTISELECT | OFN_EXPLORER | OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_HIDEREADONLY;
+    if (!GetOpenFileNameW(&ofn))
+      return false;
+
+    // Multi-select result: "folder\0file1\0file2\0\0", single file: "full path\0\0".
+    std::vector<std::wstring> files;
+    std::wstring first = buffer.data();
+    const wchar_t* p = buffer.data() + first.size() + 1;
+    if (*p == L'\0')
+      files.push_back(first);
+    else
+      for (; *p; p += wcslen(p) + 1)
+        files.push_back(first + L"\\" + p);
+
+    images.clear();
+    std::wstring unknown;
+    for (const std::wstring& file : files)
+    {
+      std::string label = iso::emperorDisc(std::filesystem::path(file));
+      if (!label.empty())
+        images[label] = file;
+      else
+        unknown += L"\n  " + std::filesystem::path(file).filename().wstring();
+    }
+    addIsoImagesFromFolders(files, images);
+
+    std::wstring summary;
+    for (int i = 1; i <= 4; i++)
+    {
+      std::string label = "EMPEROR" + std::to_string(i);
+      auto it = images.find(label);
+      summary += (gLang == Lang::DE ? L"\nCD " : L"\nDisc ") + std::to_wstring(i) + L": " +
+                 (it != images.end() ? std::filesystem::path(it->second).filename().wstring()
+                                     : std::wstring(T(L"- (will be asked for as a CD)", L"- (wird als CD abgefragt)")));
+    }
+    if (!unknown.empty())
+      summary += std::wstring(T(L"\n\nNot an Emperor disc image:", L"\n\nKein Emperor-CD-Abbild:")) + unknown;
+
+    int choice = MessageBoxW(nullptr, (std::wstring(T(L"Found these disc images:\n", L"Gefundene CD-Abbilder:\n")) + summary +
+                                       T(L"\n\nContinue = install,  Try Again = choose again,  Cancel = quit",
+                                         L"\n\nWeiter = installieren,  Wiederholen = neu ausw\u00e4hlen,  Abbrechen = beenden")).c_str(),
+                             L"Emperor Spice", (images.empty() ? MB_RETRYCANCEL : MB_CANCELTRYCONTINUE) | MB_ICONQUESTION);
+    if (choice == IDCANCEL)
+      return false;
+    if (choice == IDCONTINUE && !images.empty())
+      return true;
+    // IDRETRY / IDTRYAGAIN: pick again
+  }
+}
+
+// Asks how to install: from CDs (or images already mounted in Windows) or from ISO files.
+// Returns false if the player cancelled; isoImages is filled when ISO files were chosen.
+bool chooseInstallSource(std::map<std::string, std::wstring>& isoImages)
+{
+  int choice = MessageBoxW(nullptr, T(
+      L"How do you want to install the game?\n\n"
+      L"Yes - from the CDs (or disc images mounted in Windows)\n"
+      L"No - from ISO files (no mounting needed)\n"
+      L"Cancel - quit",
+      L"Wie m\u00f6chtest du das Spiel installieren?\n\n"
+      L"Ja - von den CDs (oder in Windows eingebundenen Abbildern)\n"
+      L"Nein - aus ISO-Dateien (ohne Einbinden)\n"
+      L"Abbrechen - beenden"),
+      L"Emperor Spice", MB_YESNOCANCEL | MB_ICONQUESTION);
+  if (choice == IDCANCEL)
+    return false;
+  isoImages.clear();
+  if (choice == IDNO)
+    return selectIsoImages(isoImages);
+  return true;
+}
+
 int wmain(int argc, wchar_t* argv[])
 {
   std::wstring installDirUnicode;
+  // Crisp rendering on scaled displays: lay out in real pixels for the system DPI.
+  SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_SYSTEM_AWARE);
+  gDpi = GetDpiForSystem();
+
+  // Pick the UI language first, so every message from here on (installer included) is translated.
+  settings.readSettings();
+  gLang = languageFromSetting(settings.language);
+
   if (argc > 1)
+  {
     installDirUnicode = argv[1];
+    gInstallDirArg = argv[1];
+  }
   else
     installDirUnicode = getFolderThisExeIsIn() + L"\\data";
 
@@ -475,7 +755,9 @@ int wmain(int argc, wchar_t* argv[])
   {
     if (!wideToAscii(item).has_value())
     {
-      MessageBoxW(nullptr, (item + L" contains non-English characters, please move to a folder with only English characters").c_str(), L"Bad install path", MB_OK);
+      MessageBoxW(nullptr, (item + T(L" contains non-English characters (e.g. umlauts), please move to a folder with only English characters",
+                                       L" enth\u00e4lt Sonderzeichen (z. B. Umlaute). Bitte verschiebe alles in einen Ordner, dessen Pfad nur englische Buchstaben enth\u00e4lt.")).c_str(),
+                  T(L"Bad install path", L"Ung\u00fcltiger Installationspfad"), MB_OK);
       return 1;
     }
   }
@@ -487,39 +769,63 @@ int wmain(int argc, wchar_t* argv[])
   if (gameExeMd5.empty())
   {
     // No Game.exe at all - nothing to run, so we must install (or quit).
-    if (MessageBoxA(nullptr, ("Game.exe was not found in " + installDir + ".\n\nInstall the game here now?").c_str(),
-                    "Game not found", MB_OKCANCEL | MB_ICONQUESTION) != IDOK)
+    if (MessageBoxW(nullptr, (T(L"Game.exe was not found in ", L"Game.exe wurde nicht gefunden in ") + toWide(installDir) +
+                              T(L".\n\nInstall the game here now?", L".\n\nSoll das Spiel jetzt hier installiert werden?")).c_str(),
+                    T(L"Game not found", L"Spiel nicht gefunden"), MB_OKCANCEL | MB_ICONQUESTION) != IDOK)
       return 0;
 
-    installEmperor(installDir);
+    std::map<std::string, std::wstring> isoImages;
+    if (!chooseInstallSource(isoImages))
+      return 0;
+
+    installEmperor(installDir, isoImages);
 
     if (getMd5OfFile(installDir + "\\Game.exe").empty())
     {
-      MessageBoxA(nullptr, "Installation failed!", "Error", MB_OK);
+      MessageBoxW(nullptr, T(L"Installation failed!", L"Installation fehlgeschlagen!"), T(L"Error", L"Fehler"), MB_OK);
       return 1;
     }
+
+    bool shortcut = createDesktopShortcut();
+    MessageBoxW(nullptr, shortcut
+                  ? T(L"Installation complete. A shortcut \"Emperor Spice\" was created on your desktop.",
+                      L"Installation abgeschlossen. Auf dem Desktop wurde die Verkn\u00fcpfung \"Emperor Spice\" angelegt.")
+                  : T(L"Installation complete.", L"Installation abgeschlossen."),
+                L"Emperor Spice", MB_OK | MB_ICONINFORMATION);
   }
   else if (gameExeMd5 != desiredMd5)
   {
     // Game.exe exists but is not the original v1.09 build the patches are written for (e.g. another
     // mod's patched exe, or a different patch level). Warn, but let the user run anyway if they want.
-    int choice = MessageBoxA(nullptr,
-        "Your Game.exe is not the original v1.09 version this launcher's features are built for "
-        "(checksum mismatch - it may be from another mod or a different patch).\n\n"
-        "Widescreen and the other tweaks may not work and the game could crash or be unstable. "
-        "You can proceed at your own risk.\n\n"
-        "Yes - run anyway (at your own risk)\n"
-        "No - (re)install the correct Game.exe\n"
-        "Cancel - quit",
-        "Game.exe version mismatch", MB_YESNOCANCEL | MB_ICONWARNING);
+    int choice = MessageBoxW(nullptr, T(
+        L"Your Game.exe is not the original v1.09 version this launcher's features are built for "
+        L"(checksum mismatch - it may be from another mod or a different patch).\n\n"
+        L"Widescreen and the other tweaks may not work and the game could crash or be unstable. "
+        L"You can proceed at your own risk.\n\n"
+        L"Yes - run anyway (at your own risk)\n"
+        L"No - (re)install the correct Game.exe\n"
+        L"Cancel - quit",
+        L"Deine Game.exe ist nicht die originale Version 1.09, f\u00fcr die dieser Launcher gebaut ist "
+        L"(Pr\u00fcfsumme stimmt nicht - evtl. von einer anderen Mod oder einem anderen Patch).\n\n"
+        L"Breitbild und die anderen Verbesserungen funktionieren dann eventuell nicht, das Spiel kann abst\u00fcrzen. "
+        L"Du kannst auf eigenes Risiko fortfahren.\n\n"
+        L"Ja - trotzdem starten (auf eigenes Risiko)\n"
+        L"Nein - die richtige Game.exe (neu) installieren\n"
+        L"Abbrechen - beenden"),
+        T(L"Game.exe version mismatch", L"Falsche Game.exe-Version"), MB_YESNOCANCEL | MB_ICONWARNING);
 
     if (choice == IDCANCEL)
       return 0;
     if (choice == IDNO)
     {
-      installEmperor(installDir);
+      std::map<std::string, std::wstring> isoImages;
+      if (!chooseInstallSource(isoImages))
+        return 0;
+      installEmperor(installDir, isoImages);
       if (getMd5OfFile(installDir + "\\Game.exe") != desiredMd5)
-        MessageBoxA(nullptr, "Game.exe still does not match the expected version - continuing anyway.", "Note", MB_OK);
+        MessageBoxW(nullptr, T(L"Game.exe still does not match the expected version - continuing anyway.",
+                               L"Die Game.exe entspricht immer noch nicht der erwarteten Version - es geht trotzdem weiter."),
+                    T(L"Note", L"Hinweis"), MB_OK);
     }
     // Yes: fall through and launch with the current Game.exe.
   }
@@ -527,13 +833,19 @@ int wmain(int argc, wchar_t* argv[])
   SetCurrentDirectoryA(installDir.c_str());
 
   // main window
-  int width = 550;
-  int height = 700;
-  int left = GetSystemMetrics(SM_CXSCREEN) / 2 - width / 2;
-  int top = GetSystemMetrics(SM_CYSCREEN) / 2 - height / 2;
-  window = CreateWindowEx(0, WC_DIALOG, L"Emperor Reborn", WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU, left, top, width, height, nullptr, nullptr, nullptr, nullptr);
+  // Layout is written in 96-DPI pixels and scaled with S() for the system DPI, so the launcher stays
+  // crisp (not bitmap-stretched) on displays with Windows scaling above 100%.
+  const int clientW = S(560);
+  const int y0 = S(158);          // below the header band
+  const int colL = S(16), colLW = S(330);
+  const int colR = S(356), colRW = S(188);
+  const int rowH = S(26);
 
-  // Our own emblem (icon/EmperorReborn.ico, embedded via Resources.rc) on the title bar and taskbar.
+  RECT wr = { 0, 0, clientW, S(600) };
+  window = CreateWindowEx(0, WC_DIALOG, L"Emperor Spice", WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
+                          0, 0, 100, 100, nullptr, nullptr, nullptr, nullptr);
+
+  // Our own emblem (icon/EmperorSpice.ico, embedded via Resources.rc) on the title bar and taskbar.
   HICON appIcon = LoadIconW(GetModuleHandleW(nullptr), MAKEINTRESOURCEW(IDI_APPICON));
   if (appIcon)
   {
@@ -541,105 +853,123 @@ int wmain(int argc, wchar_t* argv[])
     SendMessageW(window, WM_SETICON, ICON_SMALL, reinterpret_cast<LPARAM>(appIcon));
   }
 
-  // Branding header banner across the top (icon/launcher-header.bmp, embedded via Resources.rc).
-  HWND headerPic = CreateWindowEx(0, WC_STATIC, nullptr, WS_CHILD | WS_VISIBLE | SS_BITMAP, 12, 12, 514, 118, window, nullptr, nullptr, nullptr);
-  HBITMAP headerBmp = reinterpret_cast<HBITMAP>(LoadImageW(GetModuleHandleW(nullptr), MAKEINTRESOURCEW(IDB_HEADER), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION));
-  if (headerBmp)
-    SendMessageW(headerPic, STM_SETIMAGE, IMAGE_BITMAP, reinterpret_cast<LPARAM>(headerBmp));
+  // Branding header banner (icon/launcher-header.bmp, generated by icon/generate_spice.py).
+  // The bitmap is stored at 2x size and drawn scaled down with HALFTONE filtering (see WM_DRAWITEM),
+  // so the banner stays sharp at any Windows display scaling.
+  gHeaderPic = CreateWindowEx(0, WC_STATIC, nullptr, WS_CHILD | WS_VISIBLE | SS_OWNERDRAW,
+                              (clientW - S(514)) / 2, S(14), S(514), S(118), window, nullptr, nullptr, nullptr);
+  gHeaderBmp = reinterpret_cast<HBITMAP>(LoadImageW(GetModuleHandleW(nullptr), MAKEINTRESOURCEW(IDB_HEADER), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION));
 
-  int ySpace = 30;
-  int headerH = 140;   // vertical space reserved for the header banner above the columns
-  int yMax = 0;
-
-  // left side
+  auto groupBox = [&](const wchar_t* text, int x, int y, int w, int h)
   {
-    int y = ySpace + headerH;
-    int x = 30;
+    return CreateWindowEx(0, WC_BUTTON, text, WS_CHILD | WS_VISIBLE | BS_GROUPBOX, x, y, w, h, window, nullptr, nullptr, nullptr);
+  };
 
-    CreateWindowEx(0, WC_STATIC, L"Settings", WS_CHILD | WS_VISIBLE, x, y, 200, 24, window, nullptr, nullptr, nullptr);
-    y += ySpace;
+  // --- Graphics (left) ---
+  {
+    const int h = S(204);
+    groupBox(T(L"Graphics", L"Grafik"), colL, y0, colLW, h);
+    int x = colL + S(14);
+    int y = y0 + S(24);
 
-    fullscreenCheckbox = CreateWindowEx(0, WC_BUTTON, L"Fullscreen", WS_CHILD | BS_AUTOCHECKBOX | WS_VISIBLE, x, y, 104, 24, window, nullptr, nullptr, nullptr);
-    y += ySpace;
+    fullscreenCheckbox = CreateWindowEx(0, WC_BUTTON, T(L"Fullscreen", L"Vollbild"), WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTOCHECKBOX, x, y, S(290), S(22), window, nullptr, nullptr, nullptr);
+    y += rowH + S(4);
 
-    CreateWindowEx(0, WC_STATIC, L"Resolution", WS_CHILD | WS_VISIBLE, x, y + 4, 80, 24, window, nullptr, nullptr, nullptr);
+    CreateWindowEx(0, WC_STATIC, T(L"Resolution", L"Aufl\u00f6sung"), WS_CHILD | WS_VISIBLE, x, y + S(4), S(90), S(22), window, nullptr, nullptr, nullptr);
     // The height here also controls how tall the drop-down list is, so make it big enough for all entries.
-    resolutionCombo = CreateWindowEx(0, WC_COMBOBOX, nullptr, WS_CHILD | WS_VISIBLE | CBS_DROPDOWNLIST | WS_VSCROLL, x + 90, y, 200, 240, window, nullptr, nullptr, nullptr);
+    resolutionCombo = CreateWindowEx(0, WC_COMBOBOX, nullptr, WS_CHILD | WS_VISIBLE | WS_TABSTOP | CBS_DROPDOWNLIST | WS_VSCROLL, x + S(96), y, S(206), S(320), window, nullptr, nullptr, nullptr);
     for (const Resolution& res : resolutions)
-      SendMessageW(resolutionCombo, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(res.label));
-    // Make the drop-down list itself wider than the box so the longer "(widescreen)" labels are not clipped.
-    SendMessageW(resolutionCombo, CB_SETDROPPEDWIDTH, 230, 0);
-    y += ySpace;
+      SendMessageW(resolutionCombo, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(T(res.label, res.labelDe)));
+    SendMessageW(resolutionCombo, CB_SETDROPPEDWIDTH, S(240), 0);
+    y += rowH + S(10);
 
-    cutscene43Checkbox = CreateWindowEx(0, WC_BUTTON, L"Cutscene movies / FMV in 4:3 (black bars)", WS_CHILD | BS_AUTOCHECKBOX | WS_VISIBLE, x, y, 290, 24, window, nullptr, nullptr, nullptr);
-    y += ySpace;
+    cutscene43Checkbox = CreateWindowEx(0, WC_BUTTON, T(L"Cutscene movies / FMV in 4:3 (black bars)", L"Zwischensequenzen in 4:3 (schwarze R\u00e4nder)"), WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTOCHECKBOX, x, y, S(305), S(22), window, nullptr, nullptr, nullptr);
+    y += rowH;
 
-    smoothScrollCheckbox = CreateWindowEx(0, WC_BUTTON, L"Smooth map scrolling", WS_CHILD | BS_AUTOCHECKBOX | WS_VISIBLE, x, y, 290, 24, window, nullptr, nullptr, nullptr);
-    y += ySpace;
+    smoothScrollCheckbox = CreateWindowEx(0, WC_BUTTON, T(L"Smooth map scrolling", L"Fl\u00fcssiges Karten-Scrollen"), WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTOCHECKBOX, x, y, S(305), S(22), window, nullptr, nullptr, nullptr);
+    y += rowH;
 
-    y += ySpace;
-
-    hostGameRadio = CreateWindowEx(0, WC_BUTTON, L"Host game / singleplayer", WS_VISIBLE | WS_CHILD | BS_AUTORADIOBUTTON, x, y, 200, 24, window, nullptr, nullptr, nullptr);
-    y += ySpace;
-
-    portsLabel = CreateWindowEx(0, WC_STATIC, L"Host must open port 4005 UDP and TCP", WS_CHILD | WS_VISIBLE, x + 20, y, 300, 24, window, nullptr, nullptr, nullptr);
-    y += ySpace;
-
-    connectToServerRadio = CreateWindowEx(0, WC_BUTTON, L"Connect to server", WS_VISIBLE | WS_CHILD | BS_AUTORADIOBUTTON | WS_GROUP, x, y, 200, 24, window, nullptr, nullptr, nullptr);
-    y += ySpace;
-
-    serverAddressLabel = CreateWindowEx(0, WC_STATIC, L"Server IP or hostname (dynamic DNS supported)", WS_CHILD | WS_VISIBLE, x + 20, y, 320, 24, window, nullptr, nullptr, nullptr);
-    y += ySpace;
-
-    serverAddressTextbox = CreateWindowEx(WS_EX_CLIENTEDGE, WC_EDIT, L"host IP or hostname", WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL, x + 20, y, 200, 24, window, nullptr, nullptr, nullptr);
-    y += ySpace;
-
-    testNetworkButton = CreateWindowEx(0, WC_BUTTON, L"Test connection", WS_CHILD | WS_VISIBLE, x + 20, y, 124, 24, window, nullptr, nullptr, nullptr);
-    y += ySpace;
-
-
-    yMax = std::max(yMax, y + 8);
+    // Greyed out when the launcher was built without the bundled graphics folder (developer builds).
+    graphicsPackCheckbox = CreateWindowEx(0, WC_BUTTON, T(L"Graphics pack (dgVoodoo + ReShade)", L"Grafik-Paket (dgVoodoo + ReShade)"), WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTOCHECKBOX, x, y, S(305), S(22), window, nullptr, nullptr, nullptr);
+    if (!graphicsPack::available(std::filesystem::path(getFolderThisExeIsIn()) / L"graphics"))
+      EnableWindow(graphicsPackCheckbox, FALSE);
   }
 
-  // right side
+  // --- Language + Advanced (right) ---
   {
-    int y = ySpace + headerH;
-    int x = 330;
+    groupBox(L"Sprache / Language", colR, y0, colRW, S(60));
+    languageCombo = CreateWindowEx(0, WC_COMBOBOX, nullptr, WS_CHILD | WS_VISIBLE | WS_TABSTOP | CBS_DROPDOWNLIST, colR + S(14), y0 + S(24), colRW - S(28), S(120), window, nullptr, nullptr, nullptr);
+    SendMessageW(languageCombo, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"English"));
+    SendMessageW(languageCombo, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"Deutsch"));
+    SendMessageW(languageCombo, CB_SETCURSEL, gLang == Lang::DE ? 1 : 0, 0);
 
-    CreateWindowEx(0, WC_STATIC, L"Debug settings", WS_CHILD | WS_VISIBLE, x, y, 200, 24, window, nullptr, nullptr, nullptr);
-    y += ySpace;
-
-    pauseOnStartupCheckbox = CreateWindowEx(0, WC_BUTTON, L"Pause on startup", WS_CHILD | BS_AUTOCHECKBOX | WS_VISIBLE, x, y, 200, 24, window, nullptr, nullptr, nullptr);
-    y += ySpace;
-
-    forceCursorVisibleCheckbox = CreateWindowEx(0, WC_BUTTON, L"Force cursor visible", WS_CHILD | BS_AUTOCHECKBOX | WS_VISIBLE, x, y, 200, 24, window, nullptr, nullptr, nullptr);
-    y += ySpace;
-
-    disableCursorCaptureCheckbox = CreateWindowEx(0, WC_BUTTON, L"Disable cursor capture", WS_CHILD | BS_AUTOCHECKBOX | WS_VISIBLE, x, y, 200, 24, window, nullptr, nullptr, nullptr);
-    y += ySpace;
-
-
-    yMax = std::max(yMax, y + 8);
+    int gy = y0 + S(70);
+    groupBox(T(L"Troubleshooting", L"Fehlersuche"), colR, gy, colRW, S(134));
+    int x = colR + S(14);
+    int y = gy + S(24);
+    pauseOnStartupCheckbox = CreateWindowEx(0, WC_BUTTON, T(L"Pause on startup", L"Beim Start pausieren"), WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTOCHECKBOX, x, y, colRW - S(24), S(22), window, nullptr, nullptr, nullptr);
+    y += rowH;
+    forceCursorVisibleCheckbox = CreateWindowEx(0, WC_BUTTON, T(L"Force cursor visible", L"Mauszeiger immer zeigen"), WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTOCHECKBOX, x, y, colRW - S(24), S(22), window, nullptr, nullptr, nullptr);
+    y += rowH;
+    disableCursorCaptureCheckbox = CreateWindowEx(0, WC_BUTTON, T(L"Disable cursor capture", L"Maus nicht einfangen"), WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTOCHECKBOX, x, y, colRW - S(24), S(22), window, nullptr, nullptr, nullptr);
   }
 
-  playButton = CreateWindowEx(0, WC_BUTTON, L"Play", WS_CHILD | WS_VISIBLE, (width - 140) / 2, yMax, 140, 34, window, nullptr, nullptr, nullptr);
-
-  // credits / author links (links clickable - open in browser)
+  // --- Multiplayer (full width) ---
+  int mpY = y0 + S(216);
   {
-    int x = 30;
-    int y = yMax + 50;
+    const int h = S(132);
+    groupBox(L"Multiplayer", colL, mpY, clientW - S(32), h);
+    int x = colL + S(14);
+    int y = mpY + S(24);
 
-    CreateWindowEx(0, WC_STATIC, L"Emperor Reborn v2.5", WS_CHILD | WS_VISIBLE, x, y, 300, 20, window, nullptr, nullptr, nullptr);
-    y += 24;
+    hostGameRadio = CreateWindowEx(0, WC_BUTTON, T(L"Host game / singleplayer", L"Spiel hosten / Einzelspieler"), WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTORADIOBUTTON | WS_GROUP, x, y, S(240), S(22), window, nullptr, nullptr, nullptr);
+    portsLabel = CreateWindowEx(0, WC_STATIC, T(L"Host must open port 4005 UDP and TCP", L"Host muss Port 4005 (UDP + TCP) freigeben"), WS_CHILD | WS_VISIBLE, x + S(20), y + S(24), S(230), S(36), window, nullptr, nullptr, nullptr);
+    connectToServerRadio = CreateWindowEx(0, WC_BUTTON, T(L"Connect to server", L"Mit Server verbinden"), WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTORADIOBUTTON, x, y + S(70), S(240), S(22), window, nullptr, nullptr, nullptr);
 
-    githubLink = CreateWindowEx(0, WC_STATIC, L"github.com/azmawee", WS_CHILD | WS_VISIBLE | SS_NOTIFY, x, y, 300, 20, window, nullptr, nullptr, nullptr);
-    y += 22;
-
-    facebookLink = CreateWindowEx(0, WC_STATIC, L"facebook.com/azmawee", WS_CHILD | WS_VISIBLE | SS_NOTIFY, x, y, 300, 20, window, nullptr, nullptr, nullptr);
-    y += 22;
-
-    CreateWindowEx(0, WC_STATIC, L"azmawee@freebsd.my", WS_CHILD | WS_VISIBLE, x, y, 300, 20, window, nullptr, nullptr, nullptr);
+    int rx = colL + S(270);
+    serverAddressLabel = CreateWindowEx(0, WC_STATIC, T(L"Server IP or hostname (dynamic DNS supported)", L"Server-IP oder Hostname (auch dynamisches DNS)"), WS_CHILD | WS_VISIBLE, rx, y, S(244), S(36), window, nullptr, nullptr, nullptr);
+    serverAddressTextbox = CreateWindowEx(WS_EX_CLIENTEDGE, WC_EDIT, L"host IP or hostname", WS_CHILD | WS_VISIBLE | WS_TABSTOP | ES_AUTOHSCROLL, rx, y + S(38), S(244), S(24), window, nullptr, nullptr, nullptr);
+    testNetworkButton = CreateWindowEx(0, WC_BUTTON, T(L"Test connection", L"Verbindung testen"), WS_CHILD | WS_VISIBLE | WS_TABSTOP, rx, y + S(68), S(150), S(28), window, nullptr, nullptr, nullptr);
   }
+
+  // --- Extras (full width) ---
+  int exY = mpY + S(144);
+  {
+    groupBox(L"Extras", colL, exY, clientW - S(32), S(98));
+    moneyCheatCheckbox = CreateWindowEx(0, WC_BUTTON, T(L"Money cheat in single player:  Ctrl+Shift+G = +25,000 credits",
+                                                        L"Geld-Cheat im Einzelspieler:  Strg+Umschalt+G = +25.000 Credits"),
+                                        WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTOCHECKBOX, colL + S(14), exY + S(24), S(490), S(22), window, nullptr, nullptr, nullptr);
+    shortcutButton = CreateWindowEx(0, WC_BUTTON, T(L"Create desktop shortcut", L"Desktop-Verkn\u00fcpfung erstellen"), WS_CHILD | WS_VISIBLE | WS_TABSTOP, colL + S(14), exY + S(56), S(230), S(28), window, nullptr, nullptr, nullptr);
+  }
+
+  // --- Play button ---
+  int playY = exY + S(112);
+  playButton = CreateWindowEx(0, WC_BUTTON, T(L"Play", L"Spielen"), WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_DEFPUSHBUTTON, (clientW - S(200)) / 2, playY, S(200), S(42), window, nullptr, nullptr, nullptr);
+
+  // --- Footer: version + credits (links open in the browser) ---
+  int footY = playY + S(58);
+  HWND versionLabel = CreateWindowEx(0, WC_STATIC, L"Emperor Spice v1.0", WS_CHILD | WS_VISIBLE, colL, footY, S(200), S(20), window, nullptr, nullptr, nullptr);
+  githubLink = CreateWindowEx(0, WC_STATIC, T(L"Based on Emperor Reborn by azmawee", L"Basiert auf Emperor Reborn von azmawee"), WS_CHILD | WS_VISIBLE | SS_NOTIFY, colL, footY + S(22), S(330), S(20), window, nullptr, nullptr, nullptr);
+  facebookLink = CreateWindowEx(0, WC_STATIC, L"github.com/badrig217/EmperorSpice", WS_CHILD | WS_VISIBLE | SS_NOTIFY, colL, footY + S(42), S(330), S(20), window, nullptr, nullptr, nullptr);
+  int clientH = footY + S(70);
+
+  // Fonts: Segoe UI everywhere, semibold for the play button and the version line.
+  gUiFont = makeFont(9, FW_NORMAL);
+  gLinkFont = makeFont(9, FW_NORMAL, true);
+  HFONT boldFont = makeFont(9, FW_SEMIBOLD);
+  HFONT playFont = makeFont(12, FW_SEMIBOLD);
+  EnumChildWindows(window, setFontOnChild, reinterpret_cast<LPARAM>(gUiFont));
+  SendMessageW(playButton, WM_SETFONT, reinterpret_cast<WPARAM>(playFont), TRUE);
+  SendMessageW(versionLabel, WM_SETFONT, reinterpret_cast<WPARAM>(boldFont), TRUE);
+  SendMessageW(githubLink, WM_SETFONT, reinterpret_cast<WPARAM>(gLinkFont), TRUE);
+  SendMessageW(facebookLink, WM_SETFONT, reinterpret_cast<WPARAM>(gLinkFont), TRUE);
+
+  // Size the window so its client area fits the layout, centred on the screen.
+  gHeaderBandHeight = S(146);
+  wr = { 0, 0, clientW, clientH };
+  AdjustWindowRectEx(&wr, WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX, FALSE, 0);
+  int winW = wr.right - wr.left, winH = wr.bottom - wr.top;
+  SetWindowPos(window, nullptr, (GetSystemMetrics(SM_CXSCREEN) - winW) / 2, (GetSystemMetrics(SM_CYSCREEN) - winH) / 2, winW, winH, SWP_NOZORDER);
 
   defWndProc = reinterpret_cast<WNDPROC>(SetWindowLongPtr(window, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(WndProc)));
 
@@ -674,6 +1004,14 @@ int wmain(int argc, wchar_t* argv[])
     // The fixed presets are all 4:3, which the game expects. Picking a low one avoids locking to
     // the (often very high) desktop resolution, which makes the in-game fonts unreadably small.
     writeGraphicsSettings(gameWidth, gameHeight);
+
+    // Install or remove the graphics pack (dgVoodoo2 + ReShade) in the game folder.
+    std::wstring packError = graphicsPack::apply(std::filesystem::path(getFolderThisExeIsIn()) / L"graphics",
+                                                 std::filesystem::path(installDirUnicode), settings.graphicsPack);
+    if (!packError.empty())
+      MessageBoxW(nullptr, (T(L"The graphics pack could not be set up - the game starts without it.\n\n",
+                              L"Das Grafik-Paket konnte nicht eingerichtet werden - das Spiel startet ohne.\n\n") + packError).c_str(),
+                  L"Emperor Spice", MB_OK | MB_ICONWARNING);
 
     createGlobalCommsFileMappingHandle();
 
