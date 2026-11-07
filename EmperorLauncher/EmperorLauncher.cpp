@@ -18,6 +18,7 @@
 #include "resource.h"
 #include "Lang.hpp"
 #include "GraphicsPack.hpp"
+#include "Shortcut.hpp"
 
 // Modern Windows look for buttons, checkboxes and combo boxes (Common Controls v6). Without this the
 // launcher's controls are drawn in the Windows 95 style.
@@ -314,6 +315,7 @@ HWND cutscene43Checkbox = nullptr;
 HWND smoothScrollCheckbox = nullptr;
 HWND languageCombo = nullptr;
 HWND graphicsPackCheckbox = nullptr;
+HWND shortcutButton = nullptr;
 
 // Command line argument (custom install dir) we were started with, so a language switch can restart us identically.
 std::wstring gInstallDirArg;
@@ -492,6 +494,15 @@ LRESULT OnPlayClicked(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
   return CallWindowProc(defWndProc, hwnd, message, wParam, lParam);
 }
 
+LRESULT OnShortcutClicked(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+  if (createDesktopShortcut())
+    MessageBoxW(window, T(L"The shortcut \"Emperor Spice\" was created on your desktop.", L"Die Verkn\u00fcpfung \"Emperor Spice\" wurde auf dem Desktop angelegt."), L"Emperor Spice", MB_OK | MB_ICONINFORMATION);
+  else
+    MessageBoxW(window, T(L"The desktop shortcut could not be created.", L"Die Desktop-Verkn\u00fcpfung konnte nicht angelegt werden."), L"Emperor Spice", MB_OK | MB_ICONWARNING);
+  return CallWindowProc(defWndProc, hwnd, message, wParam, lParam);
+}
+
 LRESULT OnTestNetworkClicked(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
   testNetwork(window, settings.serverAddress);
@@ -552,6 +563,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
   if (message == WM_COMMAND && HIWORD(wParam) == BN_CLICKED && reinterpret_cast<HWND>(lParam) == pauseOnStartupCheckbox) return onPauseOnStartupCheckboxClicked(hwnd, message, wParam, lParam);
   if (message == WM_COMMAND && HIWORD(wParam) == BN_CLICKED && reinterpret_cast<HWND>(lParam) == forceCursorVisibleCheckbox) return onForceCursorVisibleCheckboxClicked(hwnd, message, wParam, lParam);
   if (message == WM_COMMAND && HIWORD(wParam) == BN_CLICKED && reinterpret_cast<HWND>(lParam) == disableCursorCaptureCheckbox) return onDisableCursorCaptureCheckboxClicked(hwnd, message, wParam, lParam);
+  if (message == WM_COMMAND && HIWORD(wParam) == BN_CLICKED && reinterpret_cast<HWND>(lParam) == shortcutButton) return OnShortcutClicked(hwnd, message, wParam, lParam);
   if (message == WM_COMMAND && HIWORD(wParam) == BN_CLICKED && reinterpret_cast<HWND>(lParam) == testNetworkButton) return OnTestNetworkClicked(hwnd, message, wParam, lParam);
 
   return CallWindowProc(defWndProc, hwnd, message, wParam, lParam);
@@ -640,6 +652,13 @@ int wmain(int argc, wchar_t* argv[])
       MessageBoxW(nullptr, T(L"Installation failed!", L"Installation fehlgeschlagen!"), T(L"Error", L"Fehler"), MB_OK);
       return 1;
     }
+
+    bool shortcut = createDesktopShortcut();
+    MessageBoxW(nullptr, shortcut
+                  ? T(L"Installation complete. A shortcut \"Emperor Spice\" was created on your desktop.",
+                      L"Installation abgeschlossen. Auf dem Desktop wurde die Verkn\u00fcpfung \"Emperor Spice\" angelegt.")
+                  : T(L"Installation complete.", L"Installation abgeschlossen."),
+                L"Emperor Spice", MB_OK | MB_ICONINFORMATION);
   }
   else if (gameExeMd5 != desiredMd5)
   {
@@ -777,8 +796,15 @@ int wmain(int argc, wchar_t* argv[])
     testNetworkButton = CreateWindowEx(0, WC_BUTTON, T(L"Test connection", L"Verbindung testen"), WS_CHILD | WS_VISIBLE | WS_TABSTOP, rx, y + S(68), S(150), S(28), window, nullptr, nullptr, nullptr);
   }
 
+  // --- Extras (full width) ---
+  int exY = mpY + S(144);
+  {
+    groupBox(L"Extras", colL, exY, clientW - S(32), S(66));
+    shortcutButton = CreateWindowEx(0, WC_BUTTON, T(L"Create desktop shortcut", L"Desktop-Verkn\u00fcpfung erstellen"), WS_CHILD | WS_VISIBLE | WS_TABSTOP, colL + S(14), exY + S(24), S(230), S(28), window, nullptr, nullptr, nullptr);
+  }
+
   // --- Play button ---
-  int playY = mpY + S(146);
+  int playY = exY + S(80);
   playButton = CreateWindowEx(0, WC_BUTTON, T(L"Play", L"Spielen"), WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_DEFPUSHBUTTON, (clientW - S(200)) / 2, playY, S(200), S(42), window, nullptr, nullptr, nullptr);
 
   // --- Footer: version + credits (links open in the browser) ---
