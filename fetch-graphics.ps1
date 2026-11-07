@@ -22,15 +22,30 @@ $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
 
 # --- pinned versions (one line per component) ---------------------------------------------
-$DgVoodooUrl    = "https://dege.fw.hu/dgVoodoo2/bin/dgVoodoo2_87_2.zip";      $DgVoodooSha256 = ""
+$DgVoodooVer    = "2.87.2";                                                     $DgVoodooSha256 = ""
 $ReShadeUrl     = "https://reshade.me/downloads/ReShade_Setup_6.8.0.exe";      $ReShadeSha256  = ""
 $ShadersRepo    = "https://github.com/crosire/reshade-shaders";                $ShadersRef     = "slim"
 $SweetFxRepo    = "https://github.com/CeeJayDK/SweetFX";                       $SweetFxRef     = "master"
 # -------------------------------------------------------------------------------------------
 
-function Get-Pinned([string]$url, [string]$sha, [string]$dest) {
-  Write-Host "Downloading $url"
-  Invoke-WebRequest -Uri $url -OutFile $dest -UseBasicParsing -UserAgent "EmperorSpice-build"
+# dgVoodoo2 is published on the author's GitHub releases and his own server; try the official locations in order.
+$v = $DgVoodooVer -replace '\.', '_'
+$DgVoodooUrls = @(
+  "https://github.com/dege-diosg/dgVoodoo2/releases/download/v$DgVoodooVer/dgVoodoo2_$v.zip",
+  "http://dege.fw.hu/dgVoodoo2/bin/dgVoodoo2_$v.zip",
+  "http://dege.freeweb.hu/dgVoodoo2/bin/dgVoodoo2_$v.zip"
+)
+
+function Get-Pinned([string[]]$urls, [string]$sha, [string]$dest) {
+  $ok = $false
+  foreach ($url in $urls) {
+    Write-Host "Downloading $url"
+    try {
+      Invoke-WebRequest -Uri $url -OutFile $dest -UseBasicParsing -UserAgent "Mozilla/5.0 (EmperorSpice build)"
+      $ok = $true; break
+    } catch { Write-Host "  failed: $($_.Exception.Message)" -ForegroundColor DarkYellow }
+  }
+  if (-not $ok) { throw "Could not download from any of: $($urls -join ', ')" }
   $actual = (Get-FileHash $dest -Algorithm SHA256).Hash.ToLower()
   if ($sha) {
     if ($actual -ne $sha.ToLower()) { throw "SHA256 mismatch for $url`n  expected $sha`n  got      $actual" }
@@ -72,7 +87,7 @@ New-Item -ItemType Directory -Path $work, $gfx, (Join-Path $gfx "licenses") -For
 
 # --- dgVoodoo2 -----------------------------------------------------------------------------
 $dgvZip = Join-Path $work "dgVoodoo2.zip"
-Get-Pinned $DgVoodooUrl $DgVoodooSha256 $dgvZip
+Get-Pinned $DgVoodooUrls $DgVoodooSha256 $dgvZip
 $dgvDir = Join-Path $work "dgVoodoo2"
 Expand-Archive $dgvZip -DestinationPath $dgvDir
 Copy-Item (Join-Path $dgvDir "MS\x86\DDraw.dll")   $gfx
@@ -87,7 +102,7 @@ Get-ChildItem $dgvDir -File | Where-Object { $_.Name -match '(?i)readme|license|
 
 # --- ReShade -------------------------------------------------------------------------------
 $rsExe = Join-Path $work "ReShade_Setup.exe"
-Get-Pinned $ReShadeUrl $ReShadeSha256 $rsExe
+Get-Pinned @($ReShadeUrl) $ReShadeSha256 $rsExe
 $sevenZip = Find-7Zip
 & $sevenZip e $rsExe "ReShade32.dll" "-o$work" -y | Out-Null
 if (-not (Test-Path (Join-Path $work "ReShade32.dll"))) { throw "ReShade32.dll not found inside the ReShade setup." }
