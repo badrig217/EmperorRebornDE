@@ -1004,7 +1004,7 @@ int wmain(int argc, wchar_t* argv[])
 
   // --- Footer: version + credits (links open in the browser) ---
   int footY = playY + S(58);
-  HWND versionLabel = CreateWindowEx(0, WC_STATIC, L"Emperor Spice v1.0", WS_CHILD | WS_VISIBLE, colL, footY, S(200), S(20), window, nullptr, nullptr, nullptr);
+  HWND versionLabel = CreateWindowEx(0, WC_STATIC, L"Emperor Spice v1.1", WS_CHILD | WS_VISIBLE, colL, footY, S(200), S(20), window, nullptr, nullptr, nullptr);
   githubLink = CreateWindowEx(0, WC_STATIC, T(L"Based on Emperor Reborn by azmawee", L"Basiert auf Emperor Reborn von azmawee"), WS_CHILD | WS_VISIBLE | SS_NOTIFY, colL, footY + S(22), S(330), S(20), window, nullptr, nullptr, nullptr);
   facebookLink = CreateWindowEx(0, WC_STATIC, L"github.com/badrig217/EmperorSpice", WS_CHILD | WS_VISIBLE | SS_NOTIFY, colL, footY + S(42), S(330), S(20), window, nullptr, nullptr, nullptr);
   int clientH = footY + S(70);

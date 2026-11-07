@@ -21,7 +21,7 @@
   powershell -ExecutionPolicy Bypass -File .\package.ps1 -Version 1.0
 #>
 param(
-  [string]$Version = "1.0",
+  [string]$Version = "1.1",
   [switch]$SkipBuild,
   # Skip downloading the graphics pack (dgVoodoo2 + ReShade) - the zip then contains no graphics folder.
   [switch]$SkipGraphics,
