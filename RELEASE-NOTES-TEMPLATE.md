@@ -1,39 +1,43 @@
-# Release notes template
+# Vorlage für Release-Notizen / Release notes template
 
-Copy this into the GitHub release body and fill it in. Keep it plain and specific. Say what
-actually changed and what you actually tested. Skip the marketing.
+Für jedes neue Release in das Beschreibungsfeld auf GitHub kopieren und ausfüllen.
+Konkret bleiben: was sich wirklich geändert hat und was wirklich getestet wurde.
 
----
-
-## Emperor Reborn vX.Y
-
-What changed since the last release:
-
-- (the actual change, in one line. e.g. "Fixed the launcher hanging when the host field was empty")
-- (another change)
-- (if something is known-broken or half-done, say so here instead of hiding it)
-
-Tested on:
-- (the OS/build you actually ran it on, e.g. "Windows 11, build XXXXX")
-- (anything a friend or tester confirmed, if any)
-
-Install: drop `EmperorReborn.exe` and `EmperorHooks.dll` into a folder with your own copy of EA's
-`EM109EN.EXE`, run the exe. Full steps in [INSTALL.txt](INSTALL.txt). You supply your own game discs
-and the EA patch; nothing copyrighted ships here.
-
-Files:
-- `EmperorReborn-vX.Y.zip` - SHA256: `...`
-
-Unsigned exe, so SmartScreen will warn (More info, Run anyway). Build it yourself from source if you
-would rather not trust the binary.
-
-Forked from [wheybags' patch](https://github.com/wheybags/EmperorLauncher).
+**Ablauf / Steps:** Build unter *Actions* abwarten → Artifact `EmperorSpice-ci` laden →
+`EmperorSpice-vci.zip` in `EmperorSpice-vX.Y.zip` umbenennen → *Releases → Draft a new release* →
+Tag `vX.Y` (Target `main`) → Text einfügen, ZIP anhängen → *Set as the latest release* → veröffentlichen.
+Vorher die Versionsnummer in `EmperorLauncher.cpp` („Emperor Spice vX.Y“) und `package.ps1` anpassen.
 
 ---
 
-### Notes for writing these
+## Emperor Spice vX.Y
 
-- One line per change. If you can't explain a change in a line, it is probably two changes.
-- Put the SHA256 in. People do check.
-- "Known issues" is fine and reads as honest. A perfect-sounding release reads as fake.
-- No "comprehensive", "seamless", "robust", "powerful". No em dashes.
+**Deutsch** · [English below](#english)
+
+### Neu
+- (eine Zeile pro Änderung, z. B. „Bodentexturen in doppelter Auflösung“)
+- (Bekannte Probleme oder Halbfertiges hier ehrlich nennen)
+
+### Getestet
+- (z. B. „Windows 11, deutsche Version, Installation aus ISO“)
+
+### Installation
+ZIP in einen Ordner ohne Umlaute entpacken, eigenen Patch `EM109DE.EXE` / `EM109EN.EXE` daneben legen,
+`EmperorSpice.exe` starten, CDs oder ISO-Dateien wählen. Windows-Warnung: *Weitere Informationen → Trotzdem ausführen*.
+Spiel und Patch 1.09 sind **nicht** enthalten.
+
+---
+
+<a id="english"></a>
+**English**
+
+- (the same changes in English)
+
+Install: extract the zip, put your own `EM109EN.EXE` / `EM109DE.EXE` next to `EmperorSpice.exe`, run it and
+choose CDs or ISO files. SmartScreen: *More info → Run anyway*. The game and the v1.09 patch are **not** included.
+
+---
+
+Based on [Emperor Reborn](https://github.com/azmawee/EmperorReborn) by azmawee and
+[EmperorLauncher](https://github.com/wheybags/EmperorLauncher) by wheybags. Unofficial fan project,
+not affiliated with Electronic Arts / Westwood.

@@ -29,7 +29,11 @@
 - **Geld-Cheat** (optional, nur Einzelspieler): im Launcher unter „Extras“ einschalten, dann gibt **Strg+Umschalt+G** im Spiel +25.000 Credits. Im Multiplayer ist er gesperrt.
 
 
-![Launcher](screenshots/launcher-de.png)
+<p align="center"><img src="screenshots/launcher-de.png" alt="Launcher" width="420"></p>
+
+| Breitbild im Gefecht / widescreen battle | Hauptmenü / main menu |
+|---|---|
+| ![Gefecht in 16:9](screenshots/gameplay-3.png) | ![Hauptmenü in 16:9](screenshots/menu.png) |
 
 ### Was du brauchst
 
@@ -116,7 +120,7 @@ Deine Änderungen im ReShade-Menü bleiben erhalten. Ohne Haken entfernt der Lau
 
 Emperor Spice stands on the shoulders of others – thank you!
 
-- **[Emperor Reborn](https://github.com/azmawee/EmperorReborn)** by azmawee – widescreen, HUD, upscaling, multiplayer and the launcher this project is built on ([original README](docs/EmperorReborn-README.md)).
+- **[Emperor Reborn](https://github.com/azmawee/EmperorReborn)** by azmawee – widescreen, HUD, upscaling, multiplayer and the launcher this project is built on ([original README](docs/EmperorReborn-README.md), [how the widescreen was made](docs/widescreen-story.md)).
 - **[EmperorLauncher](https://github.com/wheybags/EmperorLauncher)** by Tom Mason (wheybags) – the original modern-Windows patch.
 - **Moro** – in-game HUD/sidebar widescreen patch, shared in the Emperor community.
 - **[dgVoodoo2](http://dege.freeweb.hu/dgVoodoo2/)** by Dege, **[ReShade](https://reshade.me)** by crosire, **[SweetFX](https://github.com/CeeJayDK/SweetFX)** by CeeJay.dk, SMAA by Jorge Jimenez et al.
