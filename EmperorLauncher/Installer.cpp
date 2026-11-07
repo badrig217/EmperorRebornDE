@@ -2,6 +2,7 @@
 #include <string>
 #include "../EmperorHooks/Error.hpp"
 #include "resource.h"
+#include "Lang.hpp"
 #include <filesystem>
 #include <fdi.h>
 #include <fcntl.h>
@@ -27,7 +28,10 @@ void extractPatchExe(std::string path)
   // Both the English (EM109EN.EXE) and the German (EM109DE.EXE) v1.09 patch are accepted:
   // applied to the respective CD install they produce a byte-identical Game.exe (same MD5),
   // the language only lives in the data files. So the German patch works unchanged.
-  static const char* const patchNames[] = { "EM109EN.EXE", "EM109DE.EXE" };
+  // The patch matching the chosen launcher language is preferred, the other one is used as a fallback.
+  const char* const patchNames[] = {
+    gLang == Lang::DE ? "EM109DE.EXE" : "EM109EN.EXE",
+    gLang == Lang::DE ? "EM109EN.EXE" : "EM109DE.EXE" };
 
   std::string sourcePath;
   while (true)
@@ -44,20 +48,21 @@ void extractPatchExe(std::string path)
     if (!sourcePath.empty())
       break;
 
-    std::string message =
-      "Der offizielle Westwood/EA-Patch 1.09 wurde nicht gefunden.\n"
-      "The official Westwood/EA v1.09 patch was not found.\n\n"
-      "Bitte lege deine eigene EM109DE.EXE (deutsch) oder EM109EN.EXE (englisch)\n"
-      "neben EmperorReborn.exe in diesen Ordner:\n"
-      "Please place your own EM109DE.EXE (German) or EM109EN.EXE (English)\n"
-      "next to EmperorReborn.exe in this folder:\n\n    " +
-      getExeDir() + "\n\n"
-      "Die Datei ist urheberrechtlich geschuetzt (EA/Westwood) und wird nicht mitgeliefert.\n"
-      "This file is copyrighted by EA/Westwood and is not distributed with Emperor Reborn.\n\n"
-      "OK = erneut suchen / retry      Abbrechen = beenden / Cancel = quit";
+    std::wstring message = std::wstring(T(
+      L"The official Westwood/EA v1.09 patch was not found.\n\n"
+      L"Please place your own EM109EN.EXE (English) or EM109DE.EXE (German)\n"
+      L"next to EmperorReborn.exe in this folder:\n\n    ",
+      L"Der offizielle Westwood/EA-Patch 1.09 wurde nicht gefunden.\n\n"
+      L"Bitte lege deine eigene EM109DE.EXE (deutsch) oder EM109EN.EXE (englisch)\n"
+      L"neben EmperorReborn.exe in diesen Ordner:\n\n    ")) +
+      toWide(getExeDir()) + T(
+      L"\n\nThis file is copyrighted by EA/Westwood and is not distributed with Emperor Reborn.\n\n"
+      L"Click OK after you have copied the file, or Cancel to quit.",
+      L"\n\nDie Datei ist urheberrechtlich gesch\u00fctzt (EA/Westwood) und wird nicht mitgeliefert.\n\n"
+      L"Klicke auf OK, sobald du die Datei kopiert hast, oder auf Abbrechen zum Beenden.");
 
-    if (MessageBoxA(nullptr, message.c_str(),
-          "Emperor Reborn - Patch 1.09 benoetigt / required",
+    if (MessageBoxW(nullptr, message.c_str(),
+          T(L"Emperor Reborn - v1.09 patch required", L"Emperor Reborn - Patch 1.09 ben\u00f6tigt"),
           MB_OKCANCEL | MB_ICONWARNING) == IDCANCEL)
       exit(1);
   }
@@ -417,7 +422,7 @@ std::string getDiskPath(const std::string& volumeName, const std::string& friend
     }
 
     printf("Not found!\n");
-    MessageBoxA(nullptr, ("Please insert / mount " + friendlyName).c_str(), "Emperor Reborn", MB_OK);
+    MessageBoxW(nullptr, (T(L"Please insert / mount ", L"Bitte lege ein bzw. binde ein: ") + toWide(friendlyName)).c_str(), L"Emperor Reborn", MB_OK);
   }
 }
 
@@ -449,7 +454,7 @@ void installEmperor(const std::string& installDir)
 
   // Base install + patch to v1.09
   {
-    std::string diskPath = getDiskPath("EMPEROR1", "disc 1 (Install disc)");
+    std::string diskPath = getDiskPath("EMPEROR1", gLang == Lang::DE ? "CD 1 (Installations-CD)" : "disc 1 (Install disc)");
 
     copyFolderRecursive(diskPath + "\\INSTALL\\DATA", installDir + "\\DATA");
     copyFile(diskPath + "\\INSTALL\\EMPEROR.EXE", installDir);
@@ -485,19 +490,19 @@ void installEmperor(const std::string& installDir)
 
   // Atreides data
   {
-    std::string diskPath = getDiskPath("EMPEROR2", "disc 2 (Atredies)");
+    std::string diskPath = getDiskPath("EMPEROR2", gLang == Lang::DE ? "CD 2 (Atreides)" : "disc 2 (Atreides)");
     copyFolderRecursive(diskPath, installDir + "\\disks\\EMPEROR2");
   }
 
   // Harkonnen data
   {
-    std::string diskPath = getDiskPath("EMPEROR3", "disc 3 (Harkonnen)");
+    std::string diskPath = getDiskPath("EMPEROR3", gLang == Lang::DE ? "CD 3 (Harkonnen)" : "disc 3 (Harkonnen)");
     copyFolderRecursive(diskPath, installDir + "\\disks\\EMPEROR3");
   }
 
   // Ordos data
   {
-    std::string diskPath = getDiskPath("EMPEROR4", "disc 4 (Ordos)");
+    std::string diskPath = getDiskPath("EMPEROR4", gLang == Lang::DE ? "CD 4 (Ordos)" : "disc 4 (Ordos)");
     copyFolderRecursive(diskPath, installDir + "\\disks\\EMPEROR4");
   }
 

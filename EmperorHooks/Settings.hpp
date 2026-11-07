@@ -47,6 +47,9 @@ public:
   // stays smooth instead of stepping a fixed amount per frame. On by default.
   bool smoothScroll = true;
 
+  // Launcher UI language: "de", "en", or empty (not chosen yet - follow the Windows language).
+  std::string language;
+
 public:
   void readSettings()
   {
@@ -113,6 +116,10 @@ public:
     if (smoothScrollTemp)
       smoothScroll = *smoothScrollTemp == "1";
 
+    std::optional<std::string> languageTemp = regReadString(key, "Language");
+    if (languageTemp)
+      language = *languageTemp;
+
     RegCloseKey(key);
   }
 
@@ -135,6 +142,7 @@ public:
     regWriteString(key, "Cutscene43", cutscene43 ? "1" : "0");
     regWriteString(key, "UpscaleToDesktop", upscaleToDesktop ? "1" : "0");
     regWriteString(key, "SmoothScroll", smoothScroll ? "1" : "0");
+    regWriteString(key, "Language", language);
 
     RegCloseKey(key);
   }

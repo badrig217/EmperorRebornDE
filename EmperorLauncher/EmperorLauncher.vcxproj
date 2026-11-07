@@ -95,6 +95,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Installer.hpp" />
+    <ClInclude Include="Lang.hpp" />
     <ClInclude Include="md5.h" />
     <ClInclude Include="NetworkTest.hpp" />
     <ClInclude Include="..\EmperorHooks\ResolveHost.hpp" />

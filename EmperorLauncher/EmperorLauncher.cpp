@@ -16,6 +16,7 @@
 #include "md5.h"
 #include "NetworkTest.hpp"
 #include "resource.h"
+#include "Lang.hpp"
 
 
 HANDLE globalCommsFileMappingHandle = nullptr;
@@ -209,21 +210,21 @@ int getMainMonitorHeight()
 // higher render gives a sharper (smaller) UI. They are deliberately kept below true 4K, since rendering
 // at the screen's own resolution would be a 1:1 present and bring the tiny fonts straight back. Pick the
 // tier at or below your monitor: 4K render on a 4K screen would not upscale.
-struct Resolution { int width; int height; bool widescreen; bool upscale; const wchar_t* label; };
+struct Resolution { int width; int height; bool widescreen; bool upscale; const wchar_t* label; const wchar_t* labelDe; };
 const Resolution resolutions[] =
 {
-  { 640, 480, false, false, L"640 x 480" },
-  { 800, 600, false, false, L"800 x 600" },
-  { 1024, 768, false, false, L"1024 x 768" },
-  { 1152, 864, false, false, L"1152 x 864" },
-  { 1280, 720, true, false, L"1280 x 720 (widescreen)" },
-  { 1600, 900, true, false, L"1600 x 900 (widescreen)" },
-  { 1920, 1080, true, false, L"1920 x 1080 (widescreen)" },
-  { 2560, 1440, true, false, L"2560 x 1440 (widescreen)" },
-  { 2560, 1440, true, true, L"Upscale 4K, big UI" },
-  { 1920, 1080, true, true, L"Upscale 2K, big UI" },
-  { 1280, 720, true, true, L"Upscale 1K, big UI" },
-  { 0, 0, false, false, L"Desktop" },
+  { 640, 480, false, false, L"640 x 480", L"640 x 480" },
+  { 800, 600, false, false, L"800 x 600", L"800 x 600" },
+  { 1024, 768, false, false, L"1024 x 768", L"1024 x 768" },
+  { 1152, 864, false, false, L"1152 x 864", L"1152 x 864" },
+  { 1280, 720, true, false, L"1280 x 720 (widescreen)", L"1280 x 720 (Breitbild)" },
+  { 1600, 900, true, false, L"1600 x 900 (widescreen)", L"1600 x 900 (Breitbild)" },
+  { 1920, 1080, true, false, L"1920 x 1080 (widescreen)", L"1920 x 1080 (Breitbild)" },
+  { 2560, 1440, true, false, L"2560 x 1440 (widescreen)", L"2560 x 1440 (Breitbild)" },
+  { 2560, 1440, true, true, L"Upscale 4K, big UI", L"Hochskaliert 4K, gro\u00dfe UI" },
+  { 1920, 1080, true, true, L"Upscale 2K, big UI", L"Hochskaliert 2K, gro\u00dfe UI" },
+  { 1280, 720, true, true, L"Upscale 1K, big UI", L"Hochskaliert 1K, gro\u00dfe UI" },
+  { 0, 0, false, false, L"Desktop", L"Desktop" },
 };
 
 
@@ -249,6 +250,10 @@ HWND forceCursorVisibleCheckbox = nullptr;
 HWND disableCursorCaptureCheckbox = nullptr;
 HWND cutscene43Checkbox = nullptr;
 HWND smoothScrollCheckbox = nullptr;
+HWND languageCombo = nullptr;
+
+// Command line argument (custom install dir) we were started with, so a language switch can restart us identically.
+std::wstring gInstallDirArg;
 
 bool playClicked = false;
 
@@ -380,6 +385,28 @@ LRESULT onDisableCursorCaptureCheckboxClicked(HWND hwnd, UINT message, WPARAM wP
   return CallWindowProc(defWndProc, hwnd, message, wParam, lParam);
 }
 
+// Switching the language restarts the launcher, so every label is simply recreated in the new language.
+LRESULT onLanguageChanged(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+  int index = int(SendMessageA(languageCombo, CB_GETCURSEL, 0, 0));
+  Lang chosen = index == 1 ? Lang::DE : Lang::EN;
+  if (chosen != gLang)
+  {
+    settings.language = languageToSetting(chosen);
+    settings.writeSettings();
+
+    wchar_t exePath[MAX_PATH] = {};
+    GetModuleFileNameW(nullptr, exePath, MAX_PATH);
+    std::wstring args = gInstallDirArg.empty() ? std::wstring() : (L"\"" + gInstallDirArg + L"\"");
+    ShellExecuteW(nullptr, L"open", exePath, args.empty() ? nullptr : args.c_str(), nullptr, SW_SHOWNORMAL);
+
+    DestroyWindow(window);
+    PostQuitMessage(0);
+    return 0;
+  }
+  return CallWindowProc(defWndProc, hwnd, message, wParam, lParam);
+}
+
 LRESULT OnWindowClose(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
   PostQuitMessage(0);
@@ -416,6 +443,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
   if (message == WM_COMMAND && HIWORD(wParam) == BN_CLICKED && reinterpret_cast<HWND>(lParam) == fullscreenCheckbox) return onFullscreenCheckboxClicked(hwnd, message, wParam, lParam);
   if (message == WM_COMMAND && HIWORD(wParam) == BN_CLICKED && reinterpret_cast<HWND>(lParam) == cutscene43Checkbox) return onCutscene43CheckboxClicked(hwnd, message, wParam, lParam);
   if (message == WM_COMMAND && HIWORD(wParam) == BN_CLICKED && reinterpret_cast<HWND>(lParam) == smoothScrollCheckbox) return onSmoothScrollCheckboxClicked(hwnd, message, wParam, lParam);
+  if (message == WM_COMMAND && HIWORD(wParam) == CBN_SELCHANGE && reinterpret_cast<HWND>(lParam) == languageCombo) return onLanguageChanged(hwnd, message, wParam, lParam);
   if (message == WM_COMMAND && HIWORD(wParam) == CBN_SELCHANGE && reinterpret_cast<HWND>(lParam) == resolutionCombo) return onResolutionChanged(hwnd, message, wParam, lParam);
   if (message == WM_COMMAND && HIWORD(wParam) == BN_CLICKED && reinterpret_cast<HWND>(lParam) == hostGameRadio) return onServerOrClientRadioClicked(hwnd, message, wParam, lParam);
   if (message == WM_COMMAND && HIWORD(wParam) == BN_CLICKED && reinterpret_cast<HWND>(lParam) == connectToServerRadio) return onServerOrClientRadioClicked(hwnd, message, wParam, lParam);
@@ -464,8 +492,15 @@ std::string getMd5OfFile(const std::string& path)
 int wmain(int argc, wchar_t* argv[])
 {
   std::wstring installDirUnicode;
+  // Pick the UI language first, so every message from here on (installer included) is translated.
+  settings.readSettings();
+  gLang = languageFromSetting(settings.language);
+
   if (argc > 1)
+  {
     installDirUnicode = argv[1];
+    gInstallDirArg = argv[1];
+  }
   else
     installDirUnicode = getFolderThisExeIsIn() + L"\\data";
 
@@ -475,7 +510,9 @@ int wmain(int argc, wchar_t* argv[])
   {
     if (!wideToAscii(item).has_value())
     {
-      MessageBoxW(nullptr, (item + L" contains non-English characters, please move to a folder with only English characters").c_str(), L"Bad install path", MB_OK);
+      MessageBoxW(nullptr, (item + T(L" contains non-English characters (e.g. umlauts), please move to a folder with only English characters",
+                                       L" enth\u00e4lt Sonderzeichen (z. B. Umlaute). Bitte verschiebe alles in einen Ordner, dessen Pfad nur englische Buchstaben enth\u00e4lt.")).c_str(),
+                  T(L"Bad install path", L"Ung\u00fcltiger Installationspfad"), MB_OK);
       return 1;
     }
   }
@@ -487,15 +524,16 @@ int wmain(int argc, wchar_t* argv[])
   if (gameExeMd5.empty())
   {
     // No Game.exe at all - nothing to run, so we must install (or quit).
-    if (MessageBoxA(nullptr, ("Game.exe was not found in " + installDir + ".\n\nInstall the game here now?").c_str(),
-                    "Game not found", MB_OKCANCEL | MB_ICONQUESTION) != IDOK)
+    if (MessageBoxW(nullptr, (T(L"Game.exe was not found in ", L"Game.exe wurde nicht gefunden in ") + toWide(installDir) +
+                              T(L".\n\nInstall the game here now?", L".\n\nSoll das Spiel jetzt hier installiert werden?")).c_str(),
+                    T(L"Game not found", L"Spiel nicht gefunden"), MB_OKCANCEL | MB_ICONQUESTION) != IDOK)
       return 0;
 
     installEmperor(installDir);
 
     if (getMd5OfFile(installDir + "\\Game.exe").empty())
     {
-      MessageBoxA(nullptr, "Installation failed!", "Error", MB_OK);
+      MessageBoxW(nullptr, T(L"Installation failed!", L"Installation fehlgeschlagen!"), T(L"Error", L"Fehler"), MB_OK);
       return 1;
     }
   }
@@ -503,15 +541,22 @@ int wmain(int argc, wchar_t* argv[])
   {
     // Game.exe exists but is not the original v1.09 build the patches are written for (e.g. another
     // mod's patched exe, or a different patch level). Warn, but let the user run anyway if they want.
-    int choice = MessageBoxA(nullptr,
-        "Your Game.exe is not the original v1.09 version this launcher's features are built for "
-        "(checksum mismatch - it may be from another mod or a different patch).\n\n"
-        "Widescreen and the other tweaks may not work and the game could crash or be unstable. "
-        "You can proceed at your own risk.\n\n"
-        "Yes - run anyway (at your own risk)\n"
-        "No - (re)install the correct Game.exe\n"
-        "Cancel - quit",
-        "Game.exe version mismatch", MB_YESNOCANCEL | MB_ICONWARNING);
+    int choice = MessageBoxW(nullptr, T(
+        L"Your Game.exe is not the original v1.09 version this launcher's features are built for "
+        L"(checksum mismatch - it may be from another mod or a different patch).\n\n"
+        L"Widescreen and the other tweaks may not work and the game could crash or be unstable. "
+        L"You can proceed at your own risk.\n\n"
+        L"Yes - run anyway (at your own risk)\n"
+        L"No - (re)install the correct Game.exe\n"
+        L"Cancel - quit",
+        L"Deine Game.exe ist nicht die originale Version 1.09, f\u00fcr die dieser Launcher gebaut ist "
+        L"(Pr\u00fcfsumme stimmt nicht - evtl. von einer anderen Mod oder einem anderen Patch).\n\n"
+        L"Breitbild und die anderen Verbesserungen funktionieren dann eventuell nicht, das Spiel kann abst\u00fcrzen. "
+        L"Du kannst auf eigenes Risiko fortfahren.\n\n"
+        L"Ja - trotzdem starten (auf eigenes Risiko)\n"
+        L"Nein - die richtige Game.exe (neu) installieren\n"
+        L"Abbrechen - beenden"),
+        T(L"Game.exe version mismatch", L"Falsche Game.exe-Version"), MB_YESNOCANCEL | MB_ICONWARNING);
 
     if (choice == IDCANCEL)
       return 0;
@@ -519,7 +564,9 @@ int wmain(int argc, wchar_t* argv[])
     {
       installEmperor(installDir);
       if (getMd5OfFile(installDir + "\\Game.exe") != desiredMd5)
-        MessageBoxA(nullptr, "Game.exe still does not match the expected version - continuing anyway.", "Note", MB_OK);
+        MessageBoxW(nullptr, T(L"Game.exe still does not match the expected version - continuing anyway.",
+                               L"Die Game.exe entspricht immer noch nicht der erwarteten Version - es geht trotzdem weiter."),
+                    T(L"Note", L"Hinweis"), MB_OK);
     }
     // Yes: fall through and launch with the current Game.exe.
   }
@@ -556,45 +603,45 @@ int wmain(int argc, wchar_t* argv[])
     int y = ySpace + headerH;
     int x = 30;
 
-    CreateWindowEx(0, WC_STATIC, L"Settings", WS_CHILD | WS_VISIBLE, x, y, 200, 24, window, nullptr, nullptr, nullptr);
+    CreateWindowEx(0, WC_STATIC, T(L"Settings", L"Einstellungen"), WS_CHILD | WS_VISIBLE, x, y, 200, 24, window, nullptr, nullptr, nullptr);
     y += ySpace;
 
-    fullscreenCheckbox = CreateWindowEx(0, WC_BUTTON, L"Fullscreen", WS_CHILD | BS_AUTOCHECKBOX | WS_VISIBLE, x, y, 104, 24, window, nullptr, nullptr, nullptr);
+    fullscreenCheckbox = CreateWindowEx(0, WC_BUTTON, T(L"Fullscreen", L"Vollbild"), WS_CHILD | BS_AUTOCHECKBOX | WS_VISIBLE, x, y, 140, 24, window, nullptr, nullptr, nullptr);
     y += ySpace;
 
-    CreateWindowEx(0, WC_STATIC, L"Resolution", WS_CHILD | WS_VISIBLE, x, y + 4, 80, 24, window, nullptr, nullptr, nullptr);
+    CreateWindowEx(0, WC_STATIC, T(L"Resolution", L"Aufl\u00f6sung"), WS_CHILD | WS_VISIBLE, x, y + 4, 80, 24, window, nullptr, nullptr, nullptr);
     // The height here also controls how tall the drop-down list is, so make it big enough for all entries.
     resolutionCombo = CreateWindowEx(0, WC_COMBOBOX, nullptr, WS_CHILD | WS_VISIBLE | CBS_DROPDOWNLIST | WS_VSCROLL, x + 90, y, 200, 240, window, nullptr, nullptr, nullptr);
     for (const Resolution& res : resolutions)
-      SendMessageW(resolutionCombo, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(res.label));
+      SendMessageW(resolutionCombo, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(T(res.label, res.labelDe)));
     // Make the drop-down list itself wider than the box so the longer "(widescreen)" labels are not clipped.
     SendMessageW(resolutionCombo, CB_SETDROPPEDWIDTH, 230, 0);
     y += ySpace;
 
-    cutscene43Checkbox = CreateWindowEx(0, WC_BUTTON, L"Cutscene movies / FMV in 4:3 (black bars)", WS_CHILD | BS_AUTOCHECKBOX | WS_VISIBLE, x, y, 290, 24, window, nullptr, nullptr, nullptr);
+    cutscene43Checkbox = CreateWindowEx(0, WC_BUTTON, T(L"Cutscene movies / FMV in 4:3 (black bars)", L"Zwischensequenzen in 4:3 (schwarze R\u00e4nder)"), WS_CHILD | BS_AUTOCHECKBOX | WS_VISIBLE, x, y, 290, 24, window, nullptr, nullptr, nullptr);
     y += ySpace;
 
-    smoothScrollCheckbox = CreateWindowEx(0, WC_BUTTON, L"Smooth map scrolling", WS_CHILD | BS_AUTOCHECKBOX | WS_VISIBLE, x, y, 290, 24, window, nullptr, nullptr, nullptr);
+    smoothScrollCheckbox = CreateWindowEx(0, WC_BUTTON, T(L"Smooth map scrolling", L"Fl\u00fcssiges Karten-Scrollen"), WS_CHILD | BS_AUTOCHECKBOX | WS_VISIBLE, x, y, 290, 24, window, nullptr, nullptr, nullptr);
     y += ySpace;
 
     y += ySpace;
 
-    hostGameRadio = CreateWindowEx(0, WC_BUTTON, L"Host game / singleplayer", WS_VISIBLE | WS_CHILD | BS_AUTORADIOBUTTON, x, y, 200, 24, window, nullptr, nullptr, nullptr);
+    hostGameRadio = CreateWindowEx(0, WC_BUTTON, T(L"Host game / singleplayer", L"Spiel hosten / Einzelspieler"), WS_VISIBLE | WS_CHILD | BS_AUTORADIOBUTTON, x, y, 200, 24, window, nullptr, nullptr, nullptr);
     y += ySpace;
 
-    portsLabel = CreateWindowEx(0, WC_STATIC, L"Host must open port 4005 UDP and TCP", WS_CHILD | WS_VISIBLE, x + 20, y, 300, 24, window, nullptr, nullptr, nullptr);
+    portsLabel = CreateWindowEx(0, WC_STATIC, T(L"Host must open port 4005 UDP and TCP", L"Host muss Port 4005 (UDP und TCP) freigeben"), WS_CHILD | WS_VISIBLE, x + 20, y, 300, 24, window, nullptr, nullptr, nullptr);
     y += ySpace;
 
-    connectToServerRadio = CreateWindowEx(0, WC_BUTTON, L"Connect to server", WS_VISIBLE | WS_CHILD | BS_AUTORADIOBUTTON | WS_GROUP, x, y, 200, 24, window, nullptr, nullptr, nullptr);
+    connectToServerRadio = CreateWindowEx(0, WC_BUTTON, T(L"Connect to server", L"Mit Server verbinden"), WS_VISIBLE | WS_CHILD | BS_AUTORADIOBUTTON | WS_GROUP, x, y, 200, 24, window, nullptr, nullptr, nullptr);
     y += ySpace;
 
-    serverAddressLabel = CreateWindowEx(0, WC_STATIC, L"Server IP or hostname (dynamic DNS supported)", WS_CHILD | WS_VISIBLE, x + 20, y, 320, 24, window, nullptr, nullptr, nullptr);
+    serverAddressLabel = CreateWindowEx(0, WC_STATIC, T(L"Server IP or hostname (dynamic DNS supported)", L"Server-IP oder Hostname (dynamisches DNS m\u00f6glich)"), WS_CHILD | WS_VISIBLE, x + 20, y, 320, 24, window, nullptr, nullptr, nullptr);
     y += ySpace;
 
     serverAddressTextbox = CreateWindowEx(WS_EX_CLIENTEDGE, WC_EDIT, L"host IP or hostname", WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL, x + 20, y, 200, 24, window, nullptr, nullptr, nullptr);
     y += ySpace;
 
-    testNetworkButton = CreateWindowEx(0, WC_BUTTON, L"Test connection", WS_CHILD | WS_VISIBLE, x + 20, y, 124, 24, window, nullptr, nullptr, nullptr);
+    testNetworkButton = CreateWindowEx(0, WC_BUTTON, T(L"Test connection", L"Verbindung testen"), WS_CHILD | WS_VISIBLE, x + 20, y, 140, 24, window, nullptr, nullptr, nullptr);
     y += ySpace;
 
 
@@ -606,23 +653,34 @@ int wmain(int argc, wchar_t* argv[])
     int y = ySpace + headerH;
     int x = 330;
 
-    CreateWindowEx(0, WC_STATIC, L"Debug settings", WS_CHILD | WS_VISIBLE, x, y, 200, 24, window, nullptr, nullptr, nullptr);
+    CreateWindowEx(0, WC_STATIC, L"Sprache / Language", WS_CHILD | WS_VISIBLE, x, y, 200, 24, window, nullptr, nullptr, nullptr);
     y += ySpace;
 
-    pauseOnStartupCheckbox = CreateWindowEx(0, WC_BUTTON, L"Pause on startup", WS_CHILD | BS_AUTOCHECKBOX | WS_VISIBLE, x, y, 200, 24, window, nullptr, nullptr, nullptr);
+    languageCombo = CreateWindowEx(0, WC_COMBOBOX, nullptr, WS_CHILD | WS_VISIBLE | CBS_DROPDOWNLIST, x, y, 150, 120, window, nullptr, nullptr, nullptr);
+    SendMessageW(languageCombo, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"English"));
+    SendMessageW(languageCombo, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"Deutsch"));
+    SendMessageW(languageCombo, CB_SETCURSEL, gLang == Lang::DE ? 1 : 0, 0);
     y += ySpace;
 
-    forceCursorVisibleCheckbox = CreateWindowEx(0, WC_BUTTON, L"Force cursor visible", WS_CHILD | BS_AUTOCHECKBOX | WS_VISIBLE, x, y, 200, 24, window, nullptr, nullptr, nullptr);
     y += ySpace;
 
-    disableCursorCaptureCheckbox = CreateWindowEx(0, WC_BUTTON, L"Disable cursor capture", WS_CHILD | BS_AUTOCHECKBOX | WS_VISIBLE, x, y, 200, 24, window, nullptr, nullptr, nullptr);
+    CreateWindowEx(0, WC_STATIC, T(L"Debug settings", L"Fehlersuche"), WS_CHILD | WS_VISIBLE, x, y, 200, 24, window, nullptr, nullptr, nullptr);
+    y += ySpace;
+
+    pauseOnStartupCheckbox = CreateWindowEx(0, WC_BUTTON, T(L"Pause on startup", L"Beim Start pausieren"), WS_CHILD | BS_AUTOCHECKBOX | WS_VISIBLE, x, y, 200, 24, window, nullptr, nullptr, nullptr);
+    y += ySpace;
+
+    forceCursorVisibleCheckbox = CreateWindowEx(0, WC_BUTTON, T(L"Force cursor visible", L"Mauszeiger immer anzeigen"), WS_CHILD | BS_AUTOCHECKBOX | WS_VISIBLE, x, y, 200, 24, window, nullptr, nullptr, nullptr);
+    y += ySpace;
+
+    disableCursorCaptureCheckbox = CreateWindowEx(0, WC_BUTTON, T(L"Disable cursor capture", L"Maus nicht im Fenster fangen"), WS_CHILD | BS_AUTOCHECKBOX | WS_VISIBLE, x, y, 200, 24, window, nullptr, nullptr, nullptr);
     y += ySpace;
 
 
     yMax = std::max(yMax, y + 8);
   }
 
-  playButton = CreateWindowEx(0, WC_BUTTON, L"Play", WS_CHILD | WS_VISIBLE, (width - 140) / 2, yMax, 140, 34, window, nullptr, nullptr, nullptr);
+  playButton = CreateWindowEx(0, WC_BUTTON, T(L"Play", L"Spielen"), WS_CHILD | WS_VISIBLE, (width - 140) / 2, yMax, 140, 34, window, nullptr, nullptr, nullptr);
 
   // credits / author links (links clickable - open in browser)
   {
