@@ -60,6 +60,9 @@ public:
   // Large in-game text: the game's two text fonts at 2x size (Emperor Spice HD fonts). Off by default.
   bool largeFont = false;
 
+  // Farthest camera zoom in percent of the original (100 = original, 150, 200).
+  int cameraZoom = 100;
+
 public:
   void readSettings()
   {
@@ -134,6 +137,13 @@ public:
     if (graphicsPackTemp)
       graphicsPack = *graphicsPackTemp == "1";
 
+    std::optional<std::string> cameraZoomTemp = regReadString(key, "CameraZoom");
+    if (cameraZoomTemp)
+    {
+      try { cameraZoom = std::stoi(*cameraZoomTemp); }
+      catch (...) {}
+    }
+
     std::optional<std::string> moneyCheatTemp = regReadString(key, "MoneyCheat");
     if (moneyCheatTemp)
       moneyCheat = *moneyCheatTemp == "1";
@@ -167,6 +177,7 @@ public:
     regWriteString(key, "Language", language);
     regWriteString(key, "GraphicsPack", graphicsPack ? "1" : "0");
     regWriteString(key, "MoneyCheat", moneyCheat ? "1" : "0");
+    regWriteString(key, "CameraZoom", std::to_string(cameraZoom));
     regWriteString(key, "LargeFont", largeFont ? "1" : "0");
 
     RegCloseKey(key);

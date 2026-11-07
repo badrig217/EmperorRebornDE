@@ -33,7 +33,6 @@ namespace
   FontRecord* const kFontTable = reinterpret_cast<FontRecord*>(0x5d3540);
 
   const char kSmallHd[] = "SmallHD";
-  const char kStandardHd[] = "StandardHD";
 
   std::string dataDir()
   {
@@ -103,14 +102,11 @@ void initLargeFont(bool enabled)
       r->rowHeight = 32;
       patched++;
     }
-    else if (sameName(r->name, "Standard") && r->rowHeight == 30 && r->pages == 1)
-    {
-      r->name = kStandardHd;
-      r->rowHeight = 60;
-      patched++;
-    }
+    // "Standard" (menus, options, buttons, loading screen) stays as it is: the game already sizes those
+    // texts with the resolution, so a 2x sheet makes them twice too big (tested at 720p and 1440p).
+    // Only "Small" (in-game messages) is drawn in fixed pixels and needs the HD sheet.
   }
 
   VirtualProtect(kFontTable, sizeof(FontRecord) * 8, oldProtect, &oldProtect);
-  Log("LargeFont: %d fonts switched to HD (2x)\n", patched);
+  Log("LargeFont: %d font(s) switched to HD (2x)\n", patched);
 }
