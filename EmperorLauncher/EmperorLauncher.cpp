@@ -686,7 +686,7 @@ int wmain(int argc, wchar_t* argv[])
     fullscreenCheckbox = CreateWindowEx(0, WC_BUTTON, T(L"Fullscreen", L"Vollbild"), WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTOCHECKBOX, x, y, S(290), S(22), window, nullptr, nullptr, nullptr);
     y += rowH + S(4);
 
-    CreateWindowEx(0, WC_STATIC, T(L"Resolution", L"Auflösung"), WS_CHILD | WS_VISIBLE, x, y + S(4), S(90), S(22), window, nullptr, nullptr, nullptr);
+    CreateWindowEx(0, WC_STATIC, T(L"Resolution", L"Aufl\u00f6sung"), WS_CHILD | WS_VISIBLE, x, y + S(4), S(90), S(22), window, nullptr, nullptr, nullptr);
     // The height here also controls how tall the drop-down list is, so make it big enough for all entries.
     resolutionCombo = CreateWindowEx(0, WC_COMBOBOX, nullptr, WS_CHILD | WS_VISIBLE | WS_TABSTOP | CBS_DROPDOWNLIST | WS_VSCROLL, x + S(96), y, S(206), S(320), window, nullptr, nullptr, nullptr);
     for (const Resolution& res : resolutions)
@@ -694,10 +694,10 @@ int wmain(int argc, wchar_t* argv[])
     SendMessageW(resolutionCombo, CB_SETDROPPEDWIDTH, S(240), 0);
     y += rowH + S(10);
 
-    cutscene43Checkbox = CreateWindowEx(0, WC_BUTTON, T(L"Cutscene movies / FMV in 4:3 (black bars)", L"Zwischensequenzen in 4:3 (schwarze Ränder)"), WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTOCHECKBOX, x, y, S(305), S(22), window, nullptr, nullptr, nullptr);
+    cutscene43Checkbox = CreateWindowEx(0, WC_BUTTON, T(L"Cutscene movies / FMV in 4:3 (black bars)", L"Zwischensequenzen in 4:3 (schwarze R\u00e4nder)"), WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTOCHECKBOX, x, y, S(305), S(22), window, nullptr, nullptr, nullptr);
     y += rowH;
 
-    smoothScrollCheckbox = CreateWindowEx(0, WC_BUTTON, T(L"Smooth map scrolling", L"Flüssiges Karten-Scrollen"), WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTOCHECKBOX, x, y, S(305), S(22), window, nullptr, nullptr, nullptr);
+    smoothScrollCheckbox = CreateWindowEx(0, WC_BUTTON, T(L"Smooth map scrolling", L"Fl\u00fcssiges Karten-Scrollen"), WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTOCHECKBOX, x, y, S(305), S(22), window, nullptr, nullptr, nullptr);
   }
 
   // --- Language + Advanced (right) ---

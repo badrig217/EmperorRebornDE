@@ -2,7 +2,7 @@
 // Launcher UI language (English / German).
 //
 // Usage: T(L"English text", L"Deutscher Text") returns the string for the active language.
-// German umlauts are written as \u escapes (ä ö ü Ä Ö Ü ß) so
+// German umlauts are written as \u escapes (\u00e4 \u00f6 \u00fc \u00c4 \u00d6 \u00dc \u00df) so
 // the source stays plain ASCII and compiles the same regardless of the compiler's code page.
 #include <windows.h>
 #include <string>
