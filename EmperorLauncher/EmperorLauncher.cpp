@@ -19,6 +19,9 @@
 #include "Lang.hpp"
 #include "GraphicsPack.hpp"
 #include "Shortcut.hpp"
+#include "IsoReader.hpp"
+#include <commdlg.h>
+#pragma comment(lib, "comdlg32.lib")
 
 // Modern Windows look for buttons, checkboxes and combo boxes (Common Controls v6). Without this the
 // launcher's controls are drawn in the Windows 95 style.
@@ -611,6 +614,91 @@ std::string getMd5OfFile(const std::string& path)
 }
 
 
+// Lets the player pick the ISO images of the 4 discs. Each file is identified by its volume label
+// (EMPEROR1..EMPEROR4), so the order and file names do not matter. Discs without an image are read
+// from a CD drive later. Returns false if the player cancelled.
+bool selectIsoImages(std::map<std::string, std::wstring>& images)
+{
+  while (true)
+  {
+    std::vector<wchar_t> buffer(64 * 1024, L'\0');
+    OPENFILENAMEW ofn = {};
+    ofn.lStructSize = sizeof(ofn);
+    ofn.lpstrFilter = L"ISO (*.iso)\0*.iso\0*.*\0*.*\0\0";
+    ofn.lpstrFile = buffer.data();
+    ofn.nMaxFile = DWORD(buffer.size());
+    ofn.lpstrTitle = T(L"Select the ISO images of discs 1-4", L"ISO-Abbilder der CDs 1-4 ausw\u00e4hlen");
+    ofn.Flags = OFN_ALLOWMULTISELECT | OFN_EXPLORER | OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_HIDEREADONLY;
+    if (!GetOpenFileNameW(&ofn))
+      return false;
+
+    // Multi-select result: "folder\0file1\0file2\0\0", single file: "full path\0\0".
+    std::vector<std::wstring> files;
+    std::wstring first = buffer.data();
+    const wchar_t* p = buffer.data() + first.size() + 1;
+    if (*p == L'\0')
+      files.push_back(first);
+    else
+      for (; *p; p += wcslen(p) + 1)
+        files.push_back(first + L"\\" + p);
+
+    images.clear();
+    std::wstring unknown;
+    for (const std::wstring& file : files)
+    {
+      std::string label = iso::volumeLabel(std::filesystem::path(file));
+      if (label == "EMPEROR1" || label == "EMPEROR2" || label == "EMPEROR3" || label == "EMPEROR4")
+        images[label] = file;
+      else
+        unknown += L"\n  " + std::filesystem::path(file).filename().wstring();
+    }
+
+    std::wstring summary;
+    for (int i = 1; i <= 4; i++)
+    {
+      std::string label = "EMPEROR" + std::to_string(i);
+      auto it = images.find(label);
+      summary += (gLang == Lang::DE ? L"\nCD " : L"\nDisc ") + std::to_wstring(i) + L": " +
+                 (it != images.end() ? std::filesystem::path(it->second).filename().wstring()
+                                     : std::wstring(T(L"- (will be asked for as a CD)", L"- (wird als CD abgefragt)")));
+    }
+    if (!unknown.empty())
+      summary += std::wstring(T(L"\n\nNot an Emperor disc image:", L"\n\nKein Emperor-CD-Abbild:")) + unknown;
+
+    int choice = MessageBoxW(nullptr, (std::wstring(T(L"Found these disc images:\n", L"Gefundene CD-Abbilder:\n")) + summary +
+                                       T(L"\n\nContinue = install,  Try Again = choose again,  Cancel = quit",
+                                         L"\n\nWeiter = installieren,  Wiederholen = neu ausw\u00e4hlen,  Abbrechen = beenden")).c_str(),
+                             L"Emperor Spice", (images.empty() ? MB_RETRYCANCEL : MB_CANCELTRYCONTINUE) | MB_ICONQUESTION);
+    if (choice == IDCANCEL)
+      return false;
+    if (choice == IDCONTINUE && !images.empty())
+      return true;
+    // IDRETRY / IDTRYAGAIN: pick again
+  }
+}
+
+// Asks how to install: from CDs (or images already mounted in Windows) or from ISO files.
+// Returns false if the player cancelled; isoImages is filled when ISO files were chosen.
+bool chooseInstallSource(std::map<std::string, std::wstring>& isoImages)
+{
+  int choice = MessageBoxW(nullptr, T(
+      L"How do you want to install the game?\n\n"
+      L"Yes - from the CDs (or disc images mounted in Windows)\n"
+      L"No - from ISO files (no mounting needed)\n"
+      L"Cancel - quit",
+      L"Wie m\u00f6chtest du das Spiel installieren?\n\n"
+      L"Ja - von den CDs (oder in Windows eingebundenen Abbildern)\n"
+      L"Nein - aus ISO-Dateien (ohne Einbinden)\n"
+      L"Abbrechen - beenden"),
+      L"Emperor Spice", MB_YESNOCANCEL | MB_ICONQUESTION);
+  if (choice == IDCANCEL)
+    return false;
+  isoImages.clear();
+  if (choice == IDNO)
+    return selectIsoImages(isoImages);
+  return true;
+}
+
 int wmain(int argc, wchar_t* argv[])
 {
   std::wstring installDirUnicode;
@@ -655,7 +743,11 @@ int wmain(int argc, wchar_t* argv[])
                     T(L"Game not found", L"Spiel nicht gefunden"), MB_OKCANCEL | MB_ICONQUESTION) != IDOK)
       return 0;
 
-    installEmperor(installDir);
+    std::map<std::string, std::wstring> isoImages;
+    if (!chooseInstallSource(isoImages))
+      return 0;
+
+    installEmperor(installDir, isoImages);
 
     if (getMd5OfFile(installDir + "\\Game.exe").empty())
     {
@@ -695,7 +787,10 @@ int wmain(int argc, wchar_t* argv[])
       return 0;
     if (choice == IDNO)
     {
-      installEmperor(installDir);
+      std::map<std::string, std::wstring> isoImages;
+      if (!chooseInstallSource(isoImages))
+        return 0;
+      installEmperor(installDir, isoImages);
       if (getMd5OfFile(installDir + "\\Game.exe") != desiredMd5)
         MessageBoxW(nullptr, T(L"Game.exe still does not match the expected version - continuing anyway.",
                                L"Die Game.exe entspricht immer noch nicht der erwarteten Version - es geht trotzdem weiter."),

@@ -3,6 +3,8 @@
 #include "../EmperorHooks/Error.hpp"
 #include "resource.h"
 #include "Lang.hpp"
+#include "IsoReader.hpp"
+#include "Installer.hpp"
 #include <filesystem>
 #include <fdi.h>
 #include <fcntl.h>
@@ -422,14 +424,20 @@ std::string getDiskPath(const std::string& volumeName, const std::string& friend
     }
 
     printf("Not found!\n");
-    MessageBoxW(nullptr, (T(L"Please insert / mount ", L"Bitte lege ein bzw. binde ein: ") + toWide(friendlyName)).c_str(), L"Emperor Reborn", MB_OK);
+    MessageBoxW(nullptr, (T(L"Please insert / mount ", L"Bitte lege ein bzw. binde ein: ") + toWide(friendlyName)).c_str(), L"Emperor Spice", MB_OK);
   }
 }
 
 void copyFile(const std::string& source, const std::string& destination)
 {
   printf("Copying %s\n", destination.c_str());
-  std::filesystem::copy(source, destination);
+  // Copying a file into an existing folder: name the target explicitly (same result as
+  // std::filesystem::copy(file, folder) with MSVC, but works the same everywhere). A folder as
+  // source (WOLAPI) keeps the old behaviour: its files are copied into the destination folder.
+  std::filesystem::path src(source), dst(destination);
+  if (std::filesystem::is_regular_file(src) && std::filesystem::is_directory(dst))
+    dst /= src.filename();
+  std::filesystem::copy(src, dst);
 }
 
 void copyFolderRecursive(const std::string& source, const std::string& destination)
@@ -448,13 +456,43 @@ void copyFolderRecursive(const std::string& source, const std::string& destinati
   }
 }
 
-void installEmperor(const std::string& installDir)
+// Extracts one disc image to destDir, printing progress to the console window.
+static bool extractIso(const std::wstring& isoPath, const std::string& label, const std::string& destDir)
+{
+  iso::Image image{ std::filesystem::path(isoPath) };
+  if (!image.valid() || image.volumeLabel() != label)
+    return false;
+  printf("Extracting %s from %ls\n", label.c_str(), isoPath.c_str());
+  return image.extractAll(std::filesystem::path(destDir), [](const std::wstring& file) { printf("  %ls\n", file.c_str()); });
+}
+
+static void isoError(const std::wstring& isoPath)
+{
+  MessageBoxW(nullptr, (T(L"The ISO image could not be read:\n\n", L"Das ISO-Abbild konnte nicht gelesen werden:\n\n") + isoPath).c_str(),
+              L"Emperor Spice", MB_OK | MB_ICONERROR);
+}
+
+bool installEmperor(const std::string& installDir, const std::map<std::string, std::wstring>& isoImages)
 {
   std::filesystem::create_directories(installDir);
 
   // Base install + patch to v1.09
   {
-    std::string diskPath = getDiskPath("EMPEROR1", gLang == Lang::DE ? "CD 1 (Installations-CD)" : "disc 1 (Install disc)");
+    std::string diskPath;
+    std::string isoTemp = installDir + "\\_iso_disc1";
+    auto iso1 = isoImages.find("EMPEROR1");
+    if (iso1 != isoImages.end())
+    {
+      // Disc 1 is unpacked to a temporary folder first; the normal install steps then read from there.
+      if (!extractIso(iso1->second, "EMPEROR1", isoTemp))
+      {
+        isoError(iso1->second);
+        return false;
+      }
+      diskPath = isoTemp;
+    }
+    else
+      diskPath = getDiskPath("EMPEROR1", gLang == Lang::DE ? "CD 1 (Installations-CD)" : "disc 1 (Install disc)");
 
     copyFolderRecursive(diskPath + "\\INSTALL\\DATA", installDir + "\\DATA");
     copyFile(diskPath + "\\INSTALL\\EMPEROR.EXE", installDir);
@@ -486,24 +524,69 @@ void installEmperor(const std::string& installDir)
     ExtractCabinetFiles("Game1.cab", (diskPath + "\\INSTALL\\").c_str(), installDir.c_str());
 
     patch(installDir);
+
+    if (iso1 != isoImages.end())
+    {
+      std::error_code ec;
+      std::filesystem::remove_all(isoTemp, ec);
+    }
   }
 
   // Atreides data
   {
-    std::string diskPath = getDiskPath("EMPEROR2", gLang == Lang::DE ? "CD 2 (Atreides)" : "disc 2 (Atreides)");
-    copyFolderRecursive(diskPath, installDir + "\\disks\\EMPEROR2");
+    auto iso = isoImages.find("EMPEROR2");
+    if (iso != isoImages.end())
+    {
+      // Discs 2-4 are copied 1:1, so the image is unpacked straight into place.
+      if (!extractIso(iso->second, "EMPEROR2", installDir + "\\disks\\EMPEROR2"))
+      {
+        isoError(iso->second);
+        return false;
+      }
+    }
+    else
+    {
+      std::string diskPath = getDiskPath("EMPEROR2", gLang == Lang::DE ? "CD 2 (Atreides)" : "disc 2 (Atreides)");
+      copyFolderRecursive(diskPath, installDir + "\\disks\\EMPEROR2");
+    }
   }
 
   // Harkonnen data
   {
-    std::string diskPath = getDiskPath("EMPEROR3", gLang == Lang::DE ? "CD 3 (Harkonnen)" : "disc 3 (Harkonnen)");
-    copyFolderRecursive(diskPath, installDir + "\\disks\\EMPEROR3");
+    auto iso = isoImages.find("EMPEROR3");
+    if (iso != isoImages.end())
+    {
+      // Discs 2-4 are copied 1:1, so the image is unpacked straight into place.
+      if (!extractIso(iso->second, "EMPEROR3", installDir + "\\disks\\EMPEROR3"))
+      {
+        isoError(iso->second);
+        return false;
+      }
+    }
+    else
+    {
+      std::string diskPath = getDiskPath("EMPEROR3", gLang == Lang::DE ? "CD 3 (Harkonnen)" : "disc 3 (Harkonnen)");
+      copyFolderRecursive(diskPath, installDir + "\\disks\\EMPEROR3");
+    }
   }
 
   // Ordos data
   {
-    std::string diskPath = getDiskPath("EMPEROR4", gLang == Lang::DE ? "CD 4 (Ordos)" : "disc 4 (Ordos)");
-    copyFolderRecursive(diskPath, installDir + "\\disks\\EMPEROR4");
+    auto iso = isoImages.find("EMPEROR4");
+    if (iso != isoImages.end())
+    {
+      // Discs 2-4 are copied 1:1, so the image is unpacked straight into place.
+      if (!extractIso(iso->second, "EMPEROR4", installDir + "\\disks\\EMPEROR4"))
+      {
+        isoError(iso->second);
+        return false;
+      }
+    }
+    else
+    {
+      std::string diskPath = getDiskPath("EMPEROR4", gLang == Lang::DE ? "CD 4 (Ordos)" : "disc 4 (Ordos)");
+      copyFolderRecursive(diskPath, installDir + "\\disks\\EMPEROR4");
+    }
   }
 
   // resource.cfg, patched to point at the disk directories we just created
@@ -513,4 +596,5 @@ void installEmperor(const std::string& installDir)
     release_assert(fwrite(resourceCfg.data(), 1, resourceCfg.size(), f) == resourceCfg.size());
     fclose(f);
   }
+  return true;
 }

@@ -34,12 +34,14 @@ INSTALLATION
            EM109DE.EXE        <- selbst dazulegen
            graphics\          <- Grafik-Paket
 
-3. CD 1 einlegen bzw. die ISO-Abbilder einbinden
-   (Doppelklick auf die ISO). Die CDs heissen EMPEROR1 bis
-   EMPEROR4, die weiteren fragt der Installer ab.
-
-4. EmperorSpice.exe starten und "Spiel jetzt hier installieren?"
+3. EmperorSpice.exe starten und "Spiel jetzt hier installieren?"
    mit OK bestaetigen.
+
+4. Installationsquelle waehlen:
+   Ja   = von den CDs: CD 1 einlegen, die weiteren CDs werden
+          nacheinander abgefragt (CD-Namen EMPEROR1 - EMPEROR4).
+   Nein = aus ISO-Dateien: die 4 ISO-Dateien auswaehlen (mit
+          Strg mehrere markieren). Die Reihenfolge ist egal.
    Blaue Meldung "Der Computer wurde durch Windows geschuetzt"?
    -> "Weitere Informationen" -> "Trotzdem ausfuehren".
    (Das Programm ist nicht kostenpflichtig digital signiert.)
@@ -82,8 +84,9 @@ INSTALL
 1. Extract this zip to its own folder, e.g. D:\Games\EmperorSpice
    (no special characters in the path).
 2. Put EM109EN.EXE (or EM109DE.EXE) next to EmperorSpice.exe.
-3. Insert disc 1 or mount the ISO images (EMPEROR1 - EMPEROR4).
-4. Run EmperorSpice.exe and confirm the installation.
+3. Run EmperorSpice.exe and confirm the installation.
+4. Choose the source: Yes = CDs (insert disc 1),
+   No = select the 4 ISO files (any order).
    Windows SmartScreen? -> "More info" -> "Run anyway".
 5. Done. Use the "Emperor Spice" desktop shortcut, pick a
    resolution and click "Play". The CDs are no longer needed.

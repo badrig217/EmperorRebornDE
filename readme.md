@@ -19,7 +19,7 @@
 ### Was Emperor Spice kann
 
 - **Deutsche und englische Spielversion** – der Patch 1.09 (`EM109DE.EXE` oder `EM109EN.EXE`) wird automatisch erkannt.
-- **Eigener Installer** – kopiert das Spiel von deinen 4 CDs (oder eingebundenen ISO-Abbildern) und spielt den Patch ein. Die alten Installer und der SafeDisc-Kopierschutz, die unter Windows 10/11 nicht mehr laufen, werden nicht benötigt.
+- **Eigener Installer** – installiert das Spiel von deinen 4 CDs **oder direkt aus ISO-Dateien** (ohne sie in Windows einzubinden) und spielt den Patch ein. Die alten Installer und der SafeDisc-Kopierschutz, die unter Windows 10/11 nicht mehr laufen, werden nicht benötigt.
 - **Echtes Breitbild** (16:9) bis 2560×1440, inklusive angepasster Seitenleiste und Menüs.
 - **Grafik-Paket** (abschaltbar): 16-fache anisotrope Texturfilterung über dgVoodoo2 sowie Kantenglättung (SMAA), mehr Kontrast und Nachschärfen über ReShade.
 - **Zweisprachiger Launcher** (Deutsch/Englisch) mit moderner Oberfläche.
@@ -28,7 +28,6 @@
 - **Desktop-Verknüpfung** wird nach der Installation automatisch angelegt.
 - **Geld-Cheat** (optional, nur Einzelspieler): im Launcher unter „Extras“ einschalten, dann gibt **Strg+Umschalt+G** im Spiel +25.000 Credits. Im Multiplayer ist er gesperrt.
 
-In Arbeit: Installation direkt aus ISO-Dateien.
 
 ![Launcher](screenshots/launcher-de.png)
 
@@ -44,8 +43,10 @@ In Arbeit: Installation direkt aus ISO-Dateien.
 2. **Entpacken** in einen eigenen Ordner, z. B. `D:\Spiele\EmperorSpice`.
    **Wichtig:** Der Pfad darf keine Umlaute oder Sonderzeichen enthalten (also nicht `C:\Users\Jürgen\…`).
 3. **Patch dazulegen**: Kopiere `EM109DE.EXE` (oder `EM109EN.EXE`) in denselben Ordner wie `EmperorSpice.exe`.
-4. **CDs bereitlegen**: CD 1 einlegen bzw. die ISO-Abbilder einbinden (Doppelklick auf die ISO). Die CDs heißen `EMPEROR1` bis `EMPEROR4`; die weiteren CDs fragt der Installer nacheinander ab.
-5. **`EmperorSpice.exe` starten** und die Frage „Spiel jetzt hier installieren?“ mit OK bestätigen.
+4. **`EmperorSpice.exe` starten** und die Frage „Spiel jetzt hier installieren?“ mit OK bestätigen.
+5. **Installationsquelle wählen:**
+   - **Ja – von den CDs:** CD 1 einlegen (oder ISO in Windows einbinden), die weiteren CDs fragt der Installer nacheinander ab.
+   - **Nein – aus ISO-Dateien:** die ISO-Dateien der 4 CDs auswählen (Mehrfachauswahl mit Strg). Welche Datei welche CD ist, erkennt der Launcher selbst am Datenträgernamen (`EMPEROR1`–`EMPEROR4`).
    - Erscheint die blaue Windows-Meldung *„Der Computer wurde durch Windows geschützt“*: auf **„Weitere Informationen“** und dann **„Trotzdem ausführen“** klicken. Die Meldung kommt, weil das Programm nicht kostenpflichtig digital signiert ist.
 6. Nach der Installation liegt eine Verknüpfung **„Emperor Spice“** auf dem Desktop. Im Launcher Auflösung wählen und auf **Spielen** klicken.
 
@@ -81,7 +82,7 @@ Deine Änderungen im ReShade-Menü bleiben erhalten. Ohne Haken entfernt der Lau
 ### Features
 
 - **English and German game** – the v1.09 patch (`EM109EN.EXE` or `EM109DE.EXE`) is detected automatically.
-- **Own installer** – copies the game from your 4 CDs (or mounted ISO images) and applies the patch; the original installer and the SafeDisc copy protection are not needed.
+- **Own installer** – installs from your 4 CDs **or directly from ISO files** (no mounting needed) and applies the patch; the original installer and the SafeDisc copy protection are not needed.
 - **True 16:9 widescreen** up to 2560×1440, including the sidebar and menus.
 - **Graphics pack** (optional): 16x anisotropic filtering via dgVoodoo2, plus SMAA anti-aliasing, contrast and sharpening via ReShade.
 - **Bilingual launcher** (English/German) with a modern look.
@@ -90,7 +91,6 @@ Deine Änderungen im ReShade-Menü bleiben erhalten. Ohne Haken entfernt der Lau
 - **Desktop shortcut** is created after installation.
 - **Money cheat** (optional, single player only): enable it under "Extras" in the launcher, then **Ctrl+Shift+G** adds 25,000 credits. Disabled in multiplayer.
 
-Work in progress: installing directly from ISO files.
 
 ### Requirements
 
@@ -102,8 +102,8 @@ Work in progress: installing directly from ISO files.
 
 1. Download `EmperorSpice-v….zip` from [Releases](../../releases) and extract it to its own folder, e.g. `D:\Games\EmperorSpice` (**no special characters** in the path).
 2. Copy `EM109EN.EXE` (or `EM109DE.EXE`) next to `EmperorSpice.exe`.
-3. Insert disc 1 or mount the ISO images (discs `EMPEROR1`–`EMPEROR4`).
-4. Run `EmperorSpice.exe` and confirm the installation. If Windows SmartScreen appears, click **"More info" → "Run anyway"** (the program is not commercially code-signed).
+3. Run `EmperorSpice.exe`, confirm the installation and choose the source: **Yes** = CDs (insert disc 1), **No** = select the 4 ISO files (the launcher identifies each disc by its label `EMPEROR1`–`EMPEROR4`).
+4. Confirm. If Windows SmartScreen appears, click **"More info" → "Run anyway"** (the program is not commercially code-signed).
 5. Use the **Emperor Spice** desktop shortcut from then on, pick a resolution and click **Play**.
 
 **Graphics pack:** Scroll Lock toggles the effects, Home opens the ReShade menu. Do **not** enable MSAA in dgVoodoo – the game hangs with it; anti-aliasing is done by ReShade (SMAA).
