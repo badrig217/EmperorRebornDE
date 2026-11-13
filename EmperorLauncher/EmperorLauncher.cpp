@@ -21,6 +21,7 @@
 #include "Lang.hpp"
 #include "GraphicsPack.hpp"
 #include "FontPack.hpp"
+#include "ModPack.hpp"
 #include "Shortcut.hpp"
 #include "IsoReader.hpp"
 #include <commdlg.h>
@@ -328,6 +329,8 @@ const int cameraZoomSteps[] = { 100, 125, 150, 175 };
 HWND shortcutButton = nullptr;
 HWND moneyCheatCheckbox = nullptr;
 HWND largeFontCheckbox = nullptr;
+HWND modsCheckbox = nullptr;
+HWND modsFolderButton = nullptr;
 
 // Command line argument (custom install dir) we were started with, so a language switch can restart us identically.
 std::wstring gInstallDirArg;
@@ -383,6 +386,7 @@ void loadAndApplySettings()
   }
   SendMessageA(moneyCheatCheckbox, BM_SETCHECK, settings.moneyCheat ? BST_CHECKED : BST_UNCHECKED, 0);
   SendMessageA(largeFontCheckbox, BM_SETCHECK, settings.largeFont ? BST_CHECKED : BST_UNCHECKED, 0);
+  SendMessageA(modsCheckbox, BM_SETCHECK, settings.mods ? BST_CHECKED : BST_UNCHECKED, 0);
 
   refreshDerivedState();
 }
@@ -435,6 +439,22 @@ LRESULT onGraphicsPackCheckboxClicked(HWND hwnd, UINT message, WPARAM wParam, LP
 {
   settings.graphicsPack = SendMessage(graphicsPackCheckbox, BM_GETCHECK, 0, 0) == BST_CHECKED;
   settings.writeSettings();
+  return CallWindowProc(defWndProc, hwnd, message, wParam, lParam);
+}
+
+LRESULT onModsCheckboxClicked(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+  settings.mods = SendMessage(modsCheckbox, BM_GETCHECK, 0, 0) == BST_CHECKED;
+  settings.writeSettings();
+  return CallWindowProc(defWndProc, hwnd, message, wParam, lParam);
+}
+
+LRESULT OnModsFolderClicked(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+  std::filesystem::path modsDir = std::filesystem::path(getFolderThisExeIsIn()) / L"mods";
+  std::error_code ec;
+  std::filesystem::create_directories(modsDir, ec);
+  ShellExecuteW(window, L"open", modsDir.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
   return CallWindowProc(defWndProc, hwnd, message, wParam, lParam);
 }
 
@@ -621,6 +641,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
   if (message == WM_COMMAND && HIWORD(wParam) == BN_CLICKED && reinterpret_cast<HWND>(lParam) == moneyCheatCheckbox) return onMoneyCheatCheckboxClicked(hwnd, message, wParam, lParam);
   if (message == WM_COMMAND && HIWORD(wParam) == BN_CLICKED && reinterpret_cast<HWND>(lParam) == largeFontCheckbox) return onLargeFontCheckboxClicked(hwnd, message, wParam, lParam);
   if (message == WM_COMMAND && HIWORD(wParam) == BN_CLICKED && reinterpret_cast<HWND>(lParam) == shortcutButton) return OnShortcutClicked(hwnd, message, wParam, lParam);
+  if (message == WM_COMMAND && HIWORD(wParam) == BN_CLICKED && reinterpret_cast<HWND>(lParam) == modsCheckbox) return onModsCheckboxClicked(hwnd, message, wParam, lParam);
+  if (message == WM_COMMAND && HIWORD(wParam) == BN_CLICKED && reinterpret_cast<HWND>(lParam) == modsFolderButton) return OnModsFolderClicked(hwnd, message, wParam, lParam);
   if (message == WM_COMMAND && HIWORD(wParam) == BN_CLICKED && reinterpret_cast<HWND>(lParam) == testNetworkButton) return OnTestNetworkClicked(hwnd, message, wParam, lParam);
 
   return CallWindowProc(defWndProc, hwnd, message, wParam, lParam);
@@ -985,7 +1007,7 @@ int wmain(int argc, wchar_t* argv[])
   // --- Extras (full width) ---
   int exY = mpY + S(144);
   {
-    groupBox(L"Extras", colL, exY, clientW - S(32), S(126));
+    groupBox(L"Extras", colL, exY, clientW - S(32), S(152));
     moneyCheatCheckbox = CreateWindowEx(0, WC_BUTTON, T(L"Money cheat in single player:  Ctrl+Shift+G = +25,000 credits",
                                                         L"Geld-Cheat im Einzelspieler:  Strg+Umschalt+G = +25.000 Credits"),
                                         WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTOCHECKBOX, colL + S(14), exY + S(24), S(490), S(22), window, nullptr, nullptr, nullptr);
@@ -995,11 +1017,15 @@ int wmain(int argc, wchar_t* argv[])
                                        WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTOCHECKBOX, colL + S(14), exY + S(50), S(490), S(22), window, nullptr, nullptr, nullptr);
     if (!fontPack::available(std::filesystem::path(getFolderThisExeIsIn()) / L"fonts"))
       EnableWindow(largeFontCheckbox, FALSE);
-    shortcutButton = CreateWindowEx(0, WC_BUTTON, T(L"Create desktop shortcut", L"Desktop-Verkn\u00fcpfung erstellen"), WS_CHILD | WS_VISIBLE | WS_TABSTOP, colL + S(14), exY + S(84), S(230), S(28), window, nullptr, nullptr, nullptr);
+    modsCheckbox = CreateWindowEx(0, WC_BUTTON, T(L"Load mods from the \"mods\" folder (all players need the same mods)",
+                                                  L"Mods aus dem Ordner \u201Emods\u201C laden (im Multiplayer alle dieselben)"),
+                                  WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTOCHECKBOX, colL + S(14), exY + S(76), S(520), S(22), window, nullptr, nullptr, nullptr);
+    shortcutButton = CreateWindowEx(0, WC_BUTTON, T(L"Create desktop shortcut", L"Desktop-Verkn\u00fcpfung erstellen"), WS_CHILD | WS_VISIBLE | WS_TABSTOP, colL + S(14), exY + S(110), S(230), S(28), window, nullptr, nullptr, nullptr);
+    modsFolderButton = CreateWindowEx(0, WC_BUTTON, T(L"Open mods folder", L"Mod-Ordner \u00f6ffnen"), WS_CHILD | WS_VISIBLE | WS_TABSTOP, colL + S(254), exY + S(110), S(200), S(28), window, nullptr, nullptr, nullptr);
   }
 
   // --- Play button ---
-  int playY = exY + S(140);
+  int playY = exY + S(166);
   playButton = CreateWindowEx(0, WC_BUTTON, T(L"Play", L"Spielen"), WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_DEFPUSHBUTTON, (clientW - S(200)) / 2, playY, S(200), S(42), window, nullptr, nullptr, nullptr);
 
   // --- Footer: version + credits (links open in the browser) ---
@@ -1079,6 +1105,20 @@ int wmain(int argc, wchar_t* argv[])
         MessageBoxW(nullptr, (T(L"The large fonts could not be installed - the game starts with the normal text size.\n\n",
                                 L"Die gro\u00dfe Schrift konnte nicht eingerichtet werden - das Spiel startet mit normaler Schrift.\n\n") + fontError).c_str(),
                     L"Emperor Spice", MB_OK | MB_ICONWARNING);
+    }
+
+    // Mods: rebuild the archives from the "mods" folder (or only remove the old ones when switched off).
+    {
+      modPack::Result modResult = modPack::apply(std::filesystem::path(getFolderThisExeIsIn()) / L"mods",
+                                                 std::filesystem::path(installDirUnicode) / L"DATA", settings.mods);
+      if (!modResult.error.empty())
+        MessageBoxW(nullptr, (T(L"The mods could not be set up - the game may start without them.\n\n",
+                                L"Die Mods konnten nicht eingerichtet werden - das Spiel startet eventuell ohne.\n\n") + modResult.error).c_str(),
+                    L"Emperor Spice", MB_OK | MB_ICONWARNING);
+      else if (!modResult.warnings.empty())
+        MessageBoxW(nullptr, (T(L"These mod folders were skipped because the game has no archive with that name:\n\n",
+                                L"Diese Mod-Ordner wurden \u00fcbersprungen, weil das Spiel kein Archiv mit diesem Namen hat:\n\n") + modResult.warnings).c_str(),
+                    L"Emperor Spice", MB_OK | MB_ICONINFORMATION);
     }
 
     createGlobalCommsFileMappingHandle();

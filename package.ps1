@@ -95,6 +95,11 @@ Copy-Item (Join-Path $root "readme.md") (Join-Path $stageDir "README.txt")
 # --- large in-game text (HD font archives, built by tools/fonts/build_fontpack.py) ------------
 Copy-Item (Join-Path $root "fonts") (Join-Path $stageDir "fonts") -Recurse
 
+# --- modding: extraction script + guide, and an empty mods folder ---------------------------
+Copy-Item (Join-Path $root "modding") (Join-Path $stageDir "modding") -Recurse
+New-Item -ItemType Directory -Force -Path (Join-Path $stageDir "mods") | Out-Null
+Copy-Item (Join-Path $root "modding\MODDING.md") (Join-Path $stageDir "mods\README.txt")
+
 # --- graphics pack (dgVoodoo2 + ReShade, downloaded from the official sources) ---------------
 if (-not $SkipGraphics) {
   & (Join-Path $root "fetch-graphics.ps1")

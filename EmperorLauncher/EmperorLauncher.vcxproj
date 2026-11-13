@@ -98,6 +98,7 @@
     <ClInclude Include="Lang.hpp" />
     <ClInclude Include="GraphicsPack.hpp" />
     <ClInclude Include="FontPack.hpp" />
+    <ClInclude Include="ModPack.hpp" />
     <ClInclude Include="Shortcut.hpp" />
     <ClInclude Include="IsoReader.hpp" />
     <ClInclude Include="md5.h" />

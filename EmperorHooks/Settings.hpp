@@ -60,6 +60,9 @@ public:
   // Large in-game text: the game's two text fonts at 2x size (Emperor Spice HD fonts). Off by default.
   bool largeFont = false;
 
+  // Pack the loose files from the launcher's "mods" folder into game archives at launch (launcher only).
+  bool mods = true;
+
   // Farthest camera zoom in percent of the original (100 = original, 150, 200).
   int cameraZoom = 100;
 
@@ -148,6 +151,10 @@ public:
     if (moneyCheatTemp)
       moneyCheat = *moneyCheatTemp == "1";
 
+    std::optional<std::string> modsTemp = regReadString(key, "Mods");
+    if (modsTemp)
+      mods = *modsTemp == "1";
+
     std::optional<std::string> largeFontTemp = regReadString(key, "LargeFont");
     if (largeFontTemp)
       largeFont = *largeFontTemp == "1";
@@ -179,6 +186,7 @@ public:
     regWriteString(key, "MoneyCheat", moneyCheat ? "1" : "0");
     regWriteString(key, "CameraZoom", std::to_string(cameraZoom));
     regWriteString(key, "LargeFont", largeFont ? "1" : "0");
+    regWriteString(key, "Mods", mods ? "1" : "0");
 
     RegCloseKey(key);
   }
