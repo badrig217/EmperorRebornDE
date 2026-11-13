@@ -23,7 +23,7 @@ Alles davon hat der Projektinhaber auf Windows 11, deutsche Version, 2560×1440,
 - PR #7 (Wine/Proton), #8 (Projektstand) und #9 (Mod-Ordner) sind gemergt, aber noch in keinem Release. Wine ist ungetestet.
 - Lokale Branches (`large-font`, `camera-zoom`, `mp-hardening`, `release-1.1`, `cleanup`, `german-support`) sind gemergt und können gelöscht werden.
 
-### Grafikstil „HD“ (Branch `hd-graphics`, PR offen, Test im Spiel steht aus)
+### Grafikstil „HD“ (PR #10, im Spiel getestet: passt)
 - Launcher: „Grafikstil“ Original / Modern / HD (ersetzt den Haken „Grafik-Paket“). Registry: `GraphicsPack`, `GraphicsStyle` (0 = Modern, 1 = HD). Der Launcher setzt beim Start in den Kopien im Spielordner nur `dgVoodoo.conf [DirectX] Resolution` (2x/unforced), bei HD `[GeneralExt] Resampling = lanczos-3` und `ReShade.ini [GENERAL] PresetPath` (`Emperor_HD.ini`/`Emperor_Modern.ini`).
 - Preset `graphics/Emperor_HD.ini`: Glamarye Fast Effects (MIT, rj200 @ 9dd9b82, von `fetch-graphics.ps1` geladen) mit Umgebungsverdeckung und Fake-GI, eigener Bloom (`graphics/reshade-shaders/Shaders/EmperorSpice/EmperorBloom.fx`), Curves, Vibrance, AMD CAS.
 - Tiefe: Mit DisplayDepth „Normal map“ geprüft. Richtig ist **FAR_PLANE 1.5, nicht umgedreht** (Standard 1000 machte alles flach). Steht im Preset.
@@ -32,7 +32,7 @@ Alles davon hat der Projektinhaber auf Windows 11, deutsche Version, 2560×1440,
 - Achtung: ReShade schaltet Add-ons ab, sobald es Netzwerkverkehr sieht (Multiplayer). Dann gibt es auch keine Tiefe, Glamarye bleibt wirkungslos.
 
 ### Roadmap (vom Projektinhaber bestätigt, Schwerpunkt: **bessere Grafik**)
-1. **Bild:** Grafikstil HD (PR offen). Danach **höchste Modell-Detailstufe erzwingen** (H0 statt H1/H2/M3, gerade mit Zoom sichtbar, noch nicht untersucht). Danach eventuell Icons aus den 3D-Modellen neu rendern (groß).
+1. **Bild:** Grafikstil HD (PR #10, fertig). Danach **höchste Modell-Detailstufe erzwingen** (H0 statt H1/H2/M3, gerade mit Zoom sichtbar, noch nicht untersucht). Danach eventuell Icons aus den 3D-Modellen neu rendern (groß).
 2. **Steuerung:** Komfortfunktionen. Was der Projektinhaber vermisst, ist noch nicht gefragt.
 3. **Technik:** Der Launcher soll beim ersten Start die Monitorauflösung vorschlagen statt 1280×720. Das ist klein und wirkt groß. Außerdem Multiplayer ohne Portfreigabe (schwer: Vermittlungsserver oder ZeroTier/Tailscale) und Speicherstände in „Dokumente“.
 4. **Gefühl:** Effekte und Stimmung (zum Teil schon im HD-Preset).
