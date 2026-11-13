@@ -15,6 +15,7 @@
 #include "Log.hpp"
 #include "MoneyCheat.hpp"
 #include "CameraZoom.hpp"
+#include "ReShadeAddon.hpp"
 #include "LargeFont.hpp"
 #include "PatchWol.hpp"
 #include "Error.hpp"
@@ -88,6 +89,10 @@ static void loadReShade()
   HMODULE reshade = LoadLibraryA(fullPath);
   Log("ReShade: loading %s -> %s (error %lu)\n", fullPath, reshade ? "OK" : "FAILED",
     reshade ? 0ul : (unsigned long)GetLastError());
+
+  // Depth effects (HD preset) off in the menus, on in missions.
+  if (reshade)
+    initReShadeAddon(reshade);
 }
 
 void runHooks()

@@ -324,7 +324,7 @@ HWND disableCursorCaptureCheckbox = nullptr;
 HWND cutscene43Checkbox = nullptr;
 HWND smoothScrollCheckbox = nullptr;
 HWND languageCombo = nullptr;
-HWND graphicsPackCheckbox = nullptr;
+HWND graphicsCombo = nullptr; // Off / Modern / HD
 HWND cameraZoomCombo = nullptr;
 
 // Farthest camera zoom choices (percent of the original game's farthest zoom)
@@ -379,7 +379,7 @@ void loadAndApplySettings()
   SendMessageA(disableCursorCaptureCheckbox, BM_SETCHECK, settings.disableCursorCapture ? BST_CHECKED : BST_UNCHECKED, 0);
   SendMessageA(cutscene43Checkbox, BM_SETCHECK, settings.cutscene43 ? BST_CHECKED : BST_UNCHECKED, 0);
   SendMessageA(smoothScrollCheckbox, BM_SETCHECK, settings.smoothScroll ? BST_CHECKED : BST_UNCHECKED, 0);
-  SendMessageA(graphicsPackCheckbox, BM_SETCHECK, settings.graphicsPack ? BST_CHECKED : BST_UNCHECKED, 0);
+  SendMessageA(graphicsCombo, CB_SETCURSEL, !settings.graphicsPack ? 0 : (settings.graphicsStyle == 1 ? 2 : 1), 0);
   {
     int zoomIndex = 0;
     for (int i = 0; i < int(std::size(cameraZoomSteps)); i++)
@@ -438,10 +438,16 @@ LRESULT onCameraZoomChanged(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPara
   return CallWindowProc(defWndProc, hwnd, message, wParam, lParam);
 }
 
-LRESULT onGraphicsPackCheckboxClicked(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT onGraphicsChanged(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-  settings.graphicsPack = SendMessage(graphicsPackCheckbox, BM_GETCHECK, 0, 0) == BST_CHECKED;
-  settings.writeSettings();
+  int index = int(SendMessageA(graphicsCombo, CB_GETCURSEL, 0, 0));
+  if (index >= 0 && index <= 2)
+  {
+    settings.graphicsPack = index != 0;
+    if (index != 0)
+      settings.graphicsStyle = index == 2 ? 1 : 0;
+    settings.writeSettings();
+  }
   return CallWindowProc(defWndProc, hwnd, message, wParam, lParam);
 }
 
@@ -629,7 +635,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
 
   if (message == WM_COMMAND && HIWORD(wParam) == BN_CLICKED && reinterpret_cast<HWND>(lParam) == fullscreenCheckbox) return onFullscreenCheckboxClicked(hwnd, message, wParam, lParam);
   if (message == WM_COMMAND && HIWORD(wParam) == BN_CLICKED && reinterpret_cast<HWND>(lParam) == cutscene43Checkbox) return onCutscene43CheckboxClicked(hwnd, message, wParam, lParam);
-  if (message == WM_COMMAND && HIWORD(wParam) == BN_CLICKED && reinterpret_cast<HWND>(lParam) == graphicsPackCheckbox) return onGraphicsPackCheckboxClicked(hwnd, message, wParam, lParam);
+  if (message == WM_COMMAND && HIWORD(wParam) == CBN_SELCHANGE && reinterpret_cast<HWND>(lParam) == graphicsCombo) return onGraphicsChanged(hwnd, message, wParam, lParam);
   if (message == WM_COMMAND && HIWORD(wParam) == BN_CLICKED && reinterpret_cast<HWND>(lParam) == smoothScrollCheckbox) return onSmoothScrollCheckboxClicked(hwnd, message, wParam, lParam);
   if (message == WM_COMMAND && HIWORD(wParam) == CBN_SELCHANGE && reinterpret_cast<HWND>(lParam) == languageCombo) return onLanguageChanged(hwnd, message, wParam, lParam);
   if (message == WM_COMMAND && HIWORD(wParam) == CBN_SELCHANGE && reinterpret_cast<HWND>(lParam) == resolutionCombo) return onResolutionChanged(hwnd, message, wParam, lParam);
@@ -956,11 +962,17 @@ int wmain(int argc, wchar_t* argv[])
     smoothScrollCheckbox = CreateWindowEx(0, WC_BUTTON, T(L"Smooth map scrolling", L"Fl\u00fcssiges Karten-Scrollen"), WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTOCHECKBOX, x, y, S(305), S(22), window, nullptr, nullptr, nullptr);
     y += rowH;
 
+    // Graphics pack (dgVoodoo + ReShade): off, "Modern" or "HD".
     // Greyed out when the launcher was built without the bundled graphics folder (developer builds).
-    graphicsPackCheckbox = CreateWindowEx(0, WC_BUTTON, T(L"Graphics pack (dgVoodoo + ReShade)", L"Grafik-Paket (dgVoodoo + ReShade)"), WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTOCHECKBOX, x, y, S(305), S(22), window, nullptr, nullptr, nullptr);
+    CreateWindowEx(0, WC_STATIC, T(L"Graphics look", L"Grafikstil"), WS_CHILD | WS_VISIBLE, x, y + S(4), S(90), S(22), window, nullptr, nullptr, nullptr);
+    graphicsCombo = CreateWindowEx(0, WC_COMBOBOX, nullptr, WS_CHILD | WS_VISIBLE | WS_TABSTOP | CBS_DROPDOWNLIST, x + S(96), y, S(206), S(120), window, nullptr, nullptr, nullptr);
+    SendMessageW(graphicsCombo, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(T(L"Original (no graphics pack)", L"Original (ohne Grafik-Paket)")));
+    SendMessageW(graphicsCombo, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(T(L"Modern (sharper, smooth edges)", L"Modern (sch\u00e4rfer, glatte Kanten)")));
+    SendMessageW(graphicsCombo, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(T(L"HD (light and shadows)", L"HD (Licht und Schatten)")));
+    SendMessageW(graphicsCombo, CB_SETDROPPEDWIDTH, S(300), 0);
     if (!graphicsPack::available(std::filesystem::path(getFolderThisExeIsIn()) / L"graphics"))
-      EnableWindow(graphicsPackCheckbox, FALSE);
-    y += rowH + S(6);
+      EnableWindow(graphicsCombo, FALSE);
+    y += rowH + S(10);
 
     CreateWindowEx(0, WC_STATIC, T(L"Camera zoom", L"Kamera-Zoom"), WS_CHILD | WS_VISIBLE, x, y + S(4), S(90), S(22), window, nullptr, nullptr, nullptr);
     cameraZoomCombo = CreateWindowEx(0, WC_COMBOBOX, nullptr, WS_CHILD | WS_VISIBLE | WS_TABSTOP | CBS_DROPDOWNLIST, x + S(96), y, S(206), S(120), window, nullptr, nullptr, nullptr);
@@ -1092,7 +1104,8 @@ int wmain(int argc, wchar_t* argv[])
 
     // Install or remove the graphics pack (dgVoodoo2 + ReShade) in the game folder.
     std::wstring packError = graphicsPack::apply(std::filesystem::path(getFolderThisExeIsIn()) / L"graphics",
-                                                 std::filesystem::path(installDirUnicode), settings.graphicsPack);
+                                                 std::filesystem::path(installDirUnicode), settings.graphicsPack,
+                                                 settings.graphicsStyle == 1);
     if (!packError.empty())
       MessageBoxW(nullptr, (T(L"The graphics pack could not be set up - the game starts without it.\n\n",
                               L"Das Grafik-Paket konnte nicht eingerichtet werden - das Spiel startet ohne.\n\n") + packError).c_str(),

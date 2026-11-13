@@ -20,20 +20,18 @@ Alles davon hat der Projektinhaber auf Windows 11, deutsche Version, 2560×1440,
 ## Offen
 
 ### Pull Requests / Branches
-- **PR #7 – Linux/Steam Deck/macOS (Wine/Proton/CrossOver)**: Fix aus 2dChans Fork (`OaEnablePerUserTLibRegistration` dynamisch laden). Build ist grün. **Noch nicht gemergt und nicht in v1.1 enthalten.** Unter Windows ändert sich nichts. Unter Linux ist es ungetestet.
+- PR #7 (Wine/Proton), #8 (Projektstand) und #9 (Mod-Ordner) sind gemergt, aber noch in keinem Release. Wine ist ungetestet.
 - Lokale Branches (`large-font`, `camera-zoom`, `mp-hardening`, `release-1.1`, `cleanup`, `german-support`) sind gemergt und können gelöscht werden.
 
-### Laufendes Experiment: Grafik „HD“ (Test 2 an den Tester verschickt, Rückmeldung steht aus)
-Dateien: `graphics/experimental/`
-- dgVoodoo-Supersampling: `[DirectX] Resolution = 2x`, `[GeneralExt] Resampling = lanczos-3`
-- ReShade: Glamarye Fast Effects (MIT, rj200/Glamarye_Fast_Effects_for_ReShade @ 9dd9b82) mit Umgebungsverdeckung und Fake-GI, dazu ein eigener Bloom (`EmperorBloom.fx`), Curves, Vibrance und AMD CAS
-- Ergebnis Test 1: Im Spiel läuft es, **im Menü wird das Bild schwarz** (keine Tiefe). Der Effekt wurde als „nicht so krass“ empfunden.
-- Test 2: `depth_detect`/`sky_detect` an (Menü/HUD ausgelassen), alle Effekte kräftiger.
-- Noch unklar: Kommt ReShade unter dgVoodoo mit 2x überhaupt an die Tiefe? Zum Prüfen gibt es die Taste **Ende** (DisplayDepth), ein Screenshot davon fehlt noch.
-- Wird es übernommen, muss `fetch-graphics.ps1` Glamarye (gepinnter Commit) mitladen, und der Launcher bekommt die Wahl zwischen den Presets „Klassisch“ und „HD“.
+### Grafikstil „HD“ (Branch `hd-graphics`, PR offen, Test im Spiel steht aus)
+- Launcher: „Grafikstil“ Original / Modern / HD (ersetzt den Haken „Grafik-Paket“). Registry: `GraphicsPack`, `GraphicsStyle` (0 = Modern, 1 = HD). Der Launcher setzt beim Start in den Kopien im Spielordner nur `dgVoodoo.conf [DirectX] Resolution` (2x/unforced), bei HD `[GeneralExt] Resampling = lanczos-3` und `ReShade.ini [GENERAL] PresetPath` (`Emperor_HD.ini`/`Emperor_Modern.ini`).
+- Preset `graphics/Emperor_HD.ini`: Glamarye Fast Effects (MIT, rj200 @ 9dd9b82, von `fetch-graphics.ps1` geladen) mit Umgebungsverdeckung und Fake-GI, eigener Bloom (`graphics/reshade-shaders/Shaders/EmperorSpice/EmperorBloom.fx`), Curves, Vibrance, AMD CAS.
+- Tiefe: Mit DisplayDepth „Normal map“ geprüft. Richtig ist **FAR_PLANE 1.5, nicht umgedreht** (Standard 1000 machte alles flach). Steht im Preset.
+- Schwarzes Hauptmenü mit Glamarye (das Menü ist eine 3D-Szene): `EmperorHooks/ReShadeAddon.cpp` meldet sich über die offizielle Add-on-API bei ReShade an (Header v6.8.0 in `EmperorHooks/reshade/`) und schaltet Techniken, die mit „Glamarye“ beginnen, außerhalb einer Mission aus (Missions-Flag `0x817c0c`). Die Anmeldung am echten ReShade 6.8.0 ist unter Wine geprüft. Der Laufzeittest ging unter Wine nicht (D3D11 hängt dort), also im Spiel prüfen. Log-Zeilen: „ReShade add-on: …“.
+- Achtung: ReShade schaltet Add-ons ab, sobald es Netzwerkverkehr sieht (Multiplayer). Dann gibt es auch keine Tiefe, Glamarye bleibt wirkungslos.
 
 ### Roadmap (vom Projektinhaber bestätigt, Schwerpunkt: **bessere Grafik**)
-1. **Bild:** Grafik-Preset HD (läuft). Danach **höchste Modell-Detailstufe erzwingen** (H0 statt H1/H2/M3, gerade mit Zoom sichtbar, noch nicht untersucht). Danach eventuell Icons aus den 3D-Modellen neu rendern (groß).
+1. **Bild:** Grafikstil HD (PR offen). Danach **höchste Modell-Detailstufe erzwingen** (H0 statt H1/H2/M3, gerade mit Zoom sichtbar, noch nicht untersucht). Danach eventuell Icons aus den 3D-Modellen neu rendern (groß).
 2. **Steuerung:** Komfortfunktionen. Was der Projektinhaber vermisst, ist noch nicht gefragt.
 3. **Technik:** Der Launcher soll beim ersten Start die Monitorauflösung vorschlagen statt 1280×720. Das ist klein und wirkt groß. Außerdem Multiplayer ohne Portfreigabe (schwer: Vermittlungsserver oder ZeroTier/Tailscale) und Speicherstände in „Dokumente“.
 4. **Gefühl:** Effekte und Stimmung (zum Teil schon im HD-Preset).

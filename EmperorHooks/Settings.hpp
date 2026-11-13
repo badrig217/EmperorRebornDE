@@ -54,6 +54,10 @@ public:
   // The launcher copies the bundled files into the game folder when on, and removes them when off.
   bool graphicsPack = true;
 
+  // Look of the graphics pack: 0 = "Modern" (SMAA, contrast, sharpening), 1 = "HD" (2x supersampling in
+  // dgVoodoo, ambient occlusion + indirect light (Glamarye), bloom, CAS sharpening). Launcher only.
+  int graphicsStyle = 0;
+
   // Single-player money cheat (Ctrl+Shift+G = +25,000 credits). Off by default, never active in multiplayer.
   bool moneyCheat = false;
 
@@ -140,6 +144,10 @@ public:
     if (graphicsPackTemp)
       graphicsPack = *graphicsPackTemp == "1";
 
+    std::optional<std::string> graphicsStyleTemp = regReadString(key, "GraphicsStyle");
+    if (graphicsStyleTemp)
+      graphicsStyle = *graphicsStyleTemp == "1" ? 1 : 0;
+
     std::optional<std::string> cameraZoomTemp = regReadString(key, "CameraZoom");
     if (cameraZoomTemp)
     {
@@ -183,6 +191,7 @@ public:
     regWriteString(key, "SmoothScroll", smoothScroll ? "1" : "0");
     regWriteString(key, "Language", language);
     regWriteString(key, "GraphicsPack", graphicsPack ? "1" : "0");
+    regWriteString(key, "GraphicsStyle", std::to_string(graphicsStyle));
     regWriteString(key, "MoneyCheat", moneyCheat ? "1" : "0");
     regWriteString(key, "CameraZoom", std::to_string(cameraZoom));
     regWriteString(key, "LargeFont", largeFont ? "1" : "0");
