@@ -31,6 +31,9 @@ Alles davon hat der Projektinhaber auf Windows 11, deutsche Version, 2560×1440,
 - **Test im Spiel (13.11.):** Menü-Umschaltung läuft. Glamarye mit richtiger Tiefe ist aber unbrauchbar: Fake GI färbt alles grün, und auch mit `gi_strength=0` gibt es dunkle Schleier an Kartenrand/Seitenleiste und treppige schwarze Kanten am Schleier/Fog. Ohne Glamarye ist alles okay. Deshalb ist Glamarye im HD-Preset **aus** (liegt bei, `gi_strength=0`). HD = Supersampling + Bloom + Curves + Vibrance + CAS.
 - Achtung: ReShade schaltet Add-ons ab, sobald es Netzwerkverkehr sieht (Multiplayer). Dann gibt es auch keine Tiefe, Glamarye bleibt wirkungslos.
 
+### Community-Tools gesichtet (13.11.)
+Siehe `docs/tools-and-formats.md`: BAG-Format (Musik/Sprache) komplett, Pflichtdateien einer Karte, `rules.txt`. Offen: ob das Spiel lose Dateien in `Data\<PREFIX>\` lädt (der Visual Mod Creator nutzt `Data\Model\rules.txt`). Die Tools selbst liegen nicht im Repo.
+
 ### Roadmap (vom Projektinhaber bestätigt, Schwerpunkt: **bessere Grafik**)
 1. **Bild:** Grafikstil HD (PR #10, fertig). Danach **höchste Modell-Detailstufe erzwingen** (H0 statt H1/H2/M3, gerade mit Zoom sichtbar, noch nicht untersucht). Danach eventuell Icons aus den 3D-Modellen neu rendern (groß).
 2. **Steuerung:** Komfortfunktionen. Was der Projektinhaber vermisst, ist noch nicht gefragt.

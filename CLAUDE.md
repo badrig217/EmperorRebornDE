@@ -1,7 +1,7 @@
 # CLAUDE.md – Hinweise für Claude Code in diesem Repo
 
 **Emperor Spice** macht „Emperor: Schlacht um Dune“ (2001) auf modernen PCs spielbar und modernisiert es. Es ist ein Fork von Emperor Reborn.
-Bevor du etwas tust, lies **`docs/PROJECT-STATUS.md`** (Stand, Roadmap, offene Punkte) und bei Arbeit an Game.exe oder Dateiformaten **`docs/reverse-engineering.md`**.
+Bevor du etwas tust, lies **`docs/PROJECT-STATUS.md`** (Stand, Roadmap, offene Punkte) und bei Arbeit an Game.exe oder Dateiformaten **`docs/reverse-engineering.md`** und **`docs/tools-and-formats.md`** (alte Community-Tools, BAG, Karten, rules.txt).
 
 ## Zusammenarbeit mit dem Projektinhaber
 - Sprache: **Deutsch**, locker und knapp. Er ist kein Programmierer, technische Dinge also verständlich erklären.
