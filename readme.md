@@ -78,6 +78,7 @@ Deine Änderungen im ReShade-Menü bleiben erhalten. Ohne Haken entfernt der Lau
 - **Warnung „Falsche Game.exe-Version“:** Die Installation ist nicht vollständig durchgelaufen oder es wurde ein anderer Patch verwendet. Im Dialog „Nein“ wählen, um neu zu installieren.
 - **Texte im Spiel sehr klein:** Im Launcher unter „Extras“ **„Große Meldungen und Hinweise im Spiel“** anhaken. Alternativ eine der Auflösungen „Hochskaliert …, große UI“ wählen (dann wird das ganze Bild weicher).
 - **Grafik-Paket ausprobieren ohne Risiko:** Haken im Launcher entfernen – alles ist wie vorher.
+- **Linux / Steam Deck / macOS (experimentell):** Emperor Spice soll unter Wine, Proton und CrossOver starten, zum Beispiel über Heroic oder Lutris. Ungetestet – Rückmeldungen sind willkommen! Bekannter Kniff aus der Community: im Launcher zuerst **ohne Vollbild** mit 1920 x 1080 starten und Vollbild erst danach in Wine/Heroic einschalten.
 
 ---
 
@@ -118,6 +119,8 @@ Deine Änderungen im ReShade-Menü bleiben erhalten. Ohne Haken entfernt der Lau
 **Graphics pack:** Scroll Lock toggles the effects, Home opens the ReShade menu. Do **not** enable MSAA in dgVoodoo – the game hangs with it; anti-aliasing is done by ReShade (SMAA).
 
 **Problems?** Attach `data\emperor.txt` to an [issue](../../issues).
+
+**Linux / Steam Deck / macOS (experimental):** Emperor Spice should start under Wine, Proton and CrossOver (e.g. via Heroic or Lutris). Untested – feedback welcome! Community tip: start the launcher with **Fullscreen off** at 1920 x 1080 and switch fullscreen on in Wine/Heroic afterwards.
 
 ---
 

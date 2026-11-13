@@ -92,6 +92,26 @@ static struct hostent* PASCAL gethostbyname_override_static(const char* name) { 
 
 
 typedef HRESULT(__stdcall* PFN_DllRegisterServer)();
+typedef void(__stdcall* PFN_OaEnablePerUserTLibRegistration)();
+
+// OaEnablePerUserTLibRegistration used to be imported statically. That import is by ordinal, which
+// Wine/Proton/CrossOver don't provide, so EmperorHooks.dll failed to load there and the launcher hung.
+// Look it up at run time instead, and also set the environment switch Wine understands.
+// On Windows this does exactly what the static call did. Fix from 2dChan's Emperor Reborn fork.
+static void enablePerUserTypeLibraryRegistration()
+{
+  SetEnvironmentVariableA("OAPERUSERTLIBREG", "1");
+
+  HMODULE oleaut32 = LoadLibraryA("OLEAUT32.dll");
+  if (!oleaut32)
+    return;
+
+  // The setting is process-global inside OleAut32 and is lost if the DLL unloads, so keep it loaded.
+  PFN_OaEnablePerUserTLibRegistration enablePerUserTLibRegistration =
+    (PFN_OaEnablePerUserTLibRegistration)GetProcAddress(oleaut32, "OaEnablePerUserTLibRegistration");
+  if (enablePerUserTLibRegistration)
+    enablePerUserTLibRegistration();
+}
 
 // WOL access is provided through a separately installed COM type library (WOLAPI.DLL).
 // It's annoying to have to use the old broken installer though, so here we just register the type
@@ -101,6 +121,8 @@ typedef HRESULT(__stdcall* PFN_DllRegisterServer)();
 // Technique from here: https://stackoverflow.com/q/44379353
 void registerWolTypeLibrary()
 {
+  enablePerUserTypeLibraryRegistration();
+
   HMODULE wolApi = nullptr;
   wolApi = LoadLibraryA("WOL/WOLAPI.DLL");
 
@@ -109,7 +131,6 @@ void registerWolTypeLibrary()
   PFN_DllRegisterServer wolApiRegisterServer = (PFN_DllRegisterServer)GetProcAddress(wolApi, "DllRegisterServer");
   release_assert(wolApiRegisterServer);
 
-  OaEnablePerUserTLibRegistration();
 
   HKEY key = nullptr;
   release_assert(RegCreateKeyA(HKEY_CURRENT_USER, "Software\\Classes", &key) == ERROR_SUCCESS);
