@@ -28,6 +28,7 @@
 - **Desktop-Verknüpfung** wird nach der Installation automatisch angelegt.
 - **Weiter herauszoomen** (neu in 1.1): im Launcher unter „Kamera-Zoom“ bis 1,75x, empfohlen 1,5x.
 - **Große Meldungen und Hinweise im Spiel** (neu in 1.1): die kleine Spielschrift doppelt so groß und scharf, neu gezeichnet aus der freien Schrift DejaVu Sans. Ab 1440p wird sie automatisch vorgeschlagen.
+- **Mods ganz einfach** (neu): Dateien in den Ordner `mods` legen, der Launcher baut daraus beim Start die Spielarchive. Originaldateien als Vorlage holt `modding\Extract game files.cmd`. Anleitung: [modding/MODDING.md](modding/MODDING.md).
 - **Geld-Cheat** (optional, nur Einzelspieler): im Launcher unter „Extras“ einschalten, dann gibt **Strg+Umschalt+G** im Spiel +25.000 Credits. Im Multiplayer ist er gesperrt.
 
 
@@ -99,6 +100,7 @@ Deine Änderungen im ReShade-Menü bleiben erhalten. Ohne Haken entfernt der Lau
 - **Desktop shortcut** is created after installation.
 - **Zoom out further** (new in 1.1): "Camera zoom" in the launcher, up to 1.75x (1.5x recommended).
 - **Large in-game messages and hints** (new in 1.1): the small in-game font at 2x, sharp, redrawn from the free DejaVu Sans font. Suggested automatically from 1440p.
+- **Easy modding** (new): drop files into the `mods` folder and the launcher builds the game archives at start. `modding\Extract game files.cmd` copies the original files as a starting point. Guide: [modding/MODDING.md](modding/MODDING.md).
 - **Money cheat** (optional, single player only): enable it under "Extras" in the launcher, then **Ctrl+Shift+G** adds 25,000 credits. Disabled in multiplayer.
 
 
