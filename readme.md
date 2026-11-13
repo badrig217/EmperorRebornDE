@@ -21,7 +21,7 @@
 - **Deutsche und englische Spielversion** – der Patch 1.09 (`EM109DE.EXE` oder `EM109EN.EXE`) wird automatisch erkannt.
 - **Eigener Installer** – installiert das Spiel von deinen 4 CDs **oder direkt aus ISO-Dateien** (ohne sie in Windows einzubinden) und spielt den Patch ein. Die alten Installer und der SafeDisc-Kopierschutz, die unter Windows 10/11 nicht mehr laufen, werden nicht benötigt.
 - **Echtes Breitbild** (16:9) bis 2560×1440, inklusive angepasster Seitenleiste und Menüs.
-- **Grafik-Paket** (abschaltbar): 16-fache anisotrope Texturfilterung über dgVoodoo2 sowie Kantenglättung (SMAA), mehr Kontrast und Nachschärfen über ReShade. Dazu der Grafikstil **„HD“**: doppelte Renderauflösung (Supersampling), weiche Schatten in Ecken und indirektes Licht (Glamarye), Leuchten bei Explosionen und Lichtern (Bloom).
+- **Grafik-Paket** (abschaltbar): 16-fache anisotrope Texturfilterung über dgVoodoo2 sowie Kantenglättung (SMAA), mehr Kontrast und Nachschärfen über ReShade. Dazu der Grafikstil **„HD“**: doppelte Renderauflösung (Supersampling), Leuchten bei Explosionen und Lichtern (Bloom), kräftigere Farben und AMD-CAS-Schärfe.
 - **Zweisprachiger Launcher** (Deutsch/Englisch) mit moderner Oberfläche.
 - **Flüssiges Karten-Scrollen**, Zwischensequenzen wahlweise im Originalformat 4:3.
 - **Multiplayer** über direkte IP-Verbindung (der alte Westwood-Online-Server existiert nicht mehr).
@@ -66,7 +66,7 @@ Unter **„Grafikstil“** wählst du im Launcher:
 
 - **Original** – ohne Grafik-Paket, wie das Spiel von 2001.
 - **Modern** (Standard) – schärfere Texturen, glatte Kanten (SMAA), etwas mehr Kontrast.
-- **HD** – das Spiel wird in doppelter Auflösung berechnet und verkleinert (sehr glatte Kanten). Dazu weiche Schatten in Ecken und unter Gebäuden, indirektes Licht und Leuchten bei Explosionen. Braucht eine stärkere Grafikkarte. In den Menüs schaltet Emperor Spice die Schatten automatisch ab (sonst würde das Menü schwarz).
+- **HD** – das Spiel wird in doppelter Auflösung berechnet und verkleinert (sehr glatte Kanten). Dazu Leuchten bei Explosionen und Lichtern, kräftigere Farben und feine Schärfe. Braucht eine stärkere Grafikkarte. Zum Ausprobieren liegt Glamarye (Umgebungsverdeckung) bei, ist aber aus; wer es im ReShade-Menü einschaltet, dem schaltet Emperor Spice es in den Menüs automatisch ab.
 
 Der Launcher richtet beim Start alles selbst ein:
 
@@ -125,7 +125,7 @@ Deine Änderungen im ReShade-Menü bleiben erhalten (am besten im Gefecht änder
 4. Confirm. If Windows SmartScreen appears, click **"More info" → "Run anyway"** (the program is not commercially code-signed).
 5. Use the **Emperor Spice** desktop shortcut from then on, pick a resolution and click **Play**. Tip: pick your monitor's native resolution (e.g. 2560 x 1440 widescreen) rather than 1280 x 720 – everything gets sharp – and tick "Large in-game messages and hints".
 
-**Graphics pack:** choose the look in the launcher: Original, Modern (default) or HD (2x supersampling, ambient occlusion and indirect light, bloom; needs a stronger GPU). Scroll Lock toggles the effects, Home opens the ReShade menu. Do **not** enable MSAA in dgVoodoo – the game hangs with it; anti-aliasing is done by ReShade (SMAA).
+**Graphics pack:** choose the look in the launcher: Original, Modern (default) or HD (2x supersampling, bloom, stronger colours, CAS sharpening; needs a stronger GPU). Scroll Lock toggles the effects, Home opens the ReShade menu. Do **not** enable MSAA in dgVoodoo – the game hangs with it; anti-aliasing is done by ReShade (SMAA).
 
 **Problems?** Attach `data\emperor.txt` to an [issue](../../issues).
 
