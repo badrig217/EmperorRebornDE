@@ -60,7 +60,7 @@ Werkzeuge: `tools/re/re_tools.py` (pefile + capstone), `tools/re/rfd.py` (Archiv
 - Das Spiel nutzt D3D7 über DirectDraw. dgVoodoo2 (`DDraw.dll`, `D3DImm.dll`) übersetzt das nach D3D11.
 - MSAA in dgVoodoo **hängt das Spiel auf**. Supersampling über `[DirectX] Resolution = 2x` mit `Resampling = lanczos-3` ist der Test-Stand.
 - ReShade wird von EmperorHooks per `LoadLibrary("ReShade32.dll")` aus dem data-Ordner geladen. Ein Proxy über dxgi/d3d11 funktioniert mit dgVoodoo nicht.
-- Tiefe für ReShade: In Menüs ist sie leer. Effekte, die die Tiefe brauchen, müssen dort aussetzen, sonst wird das Bild schwarz.
+- Tiefe für ReShade: Im Gefecht passt `RESHADE_DEPTH_LINEARIZATION_FAR_PLANE=1.5`, nicht umgedreht, nicht kopfüber. Das Hauptmenü ist eine 3D-Szene, deren Tiefe Glamarye nicht verträgt (Bild schwarz). Deshalb schaltet `ReShadeAddon.cpp` solche Effekte ab, solange das Missions-Flag `0x817c0c` 0 ist.
 - Modelle gibt es in Detailstufen (`*_H0/H1/H2/M3.xbf`, „Cached …“ im Log). Idee: immer die höchste Stufe erzwingen. **Noch nicht untersucht.**
 
 ## Netzwerk (WOL-Emulation aus Emperor Reborn)

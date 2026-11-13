@@ -17,9 +17,9 @@ Bevor du etwas tust, lies **`docs/PROJECT-STATUS.md`** (Stand, Roadmap, offene P
 
 ## Aufbau
 - `EmperorLauncher/` – Win32-Launcher (`EmperorSpice.exe`): UI, Installer (CD/ISO, `IsoReader.hpp`), Grafik-Paket (`GraphicsPack.hpp`), Font-Pack (`FontPack.hpp`), Sprache (`Lang.hpp`, `T(en, de)`), Verknüpfung. Startet Game.exe per Detours mit `EmperorHooks.dll`.
-- `EmperorHooks/` – DLL im Spielprozess, läuft vor WinMain (`dllmain.cpp`, `runHooks`). Einstellungen liegen in `Settings.hpp` (Registry `HKCU\Software\WestwoodRedirect\Emperor\LauncherCustomSettings`). Eigene Hooks: `MoneyCheat`, `CameraZoom`, `LargeFont`, ReShade-Loader. Aus Reborn: Breitbild/HUD, MovieFix, SmoothScroll, WOL-Netzwerk usw.
+- `EmperorHooks/` – DLL im Spielprozess, läuft vor WinMain (`dllmain.cpp`, `runHooks`). Einstellungen liegen in `Settings.hpp` (Registry `HKCU\Software\WestwoodRedirect\Emperor\LauncherCustomSettings`). Eigene Hooks: `MoneyCheat`, `CameraZoom`, `LargeFont`, ReShade-Loader und ReShade-Add-on (`ReShadeAddon.cpp`: Tiefen-Effekte nur in Missionen). Aus Reborn: Breitbild/HUD, MovieFix, SmoothScroll, WOL-Netzwerk usw.
 - `WolServerStandalone/`, `CommsDataDumper/` – aus Reborn übernommen.
-- `graphics/` – ReShade-Konfiguration für das Grafik-Paket. `graphics/experimental/` – HD-Preset (Test).
+- `graphics/` – ReShade-Konfiguration für das Grafik-Paket: `Emperor_Modern.ini`, `Emperor_HD.ini` und eigene Shader (`reshade-shaders/`).
 - `fonts/` – fertige Schrift-Archive (gebaut mit `tools/fonts/build_fontpack.py`).
 - `fetch-graphics.ps1` – lädt dgVoodoo/ReShade/Shader (SHA256 bzw. Commit gepinnt) nach `build-graphics/` (gitignored).
 - `package.ps1 -Version X.Y` – baut das Release-ZIP. Die CI (`.github/workflows/build.yml`, windows-2022) ruft es mit `-Version ci` auf.

@@ -122,6 +122,7 @@ nmake</Command>
     <ClInclude Include="SmoothScroll.hpp" />
     <ClInclude Include="MoneyCheat.hpp" />
     <ClInclude Include="CameraZoom.hpp" />
+    <ClInclude Include="ReShadeAddon.hpp" />
     <ClInclude Include="LargeFont.hpp" />
     <ClInclude Include="WolCommon.hpp" />
     <ClInclude Include="WolIrcServer.hpp" />
@@ -148,6 +149,7 @@ nmake</Command>
     <ClCompile Include="SmoothScroll.cpp" />
     <ClCompile Include="MoneyCheat.cpp" />
     <ClCompile Include="CameraZoom.cpp" />
+    <ClCompile Include="ReShadeAddon.cpp" />
     <ClCompile Include="LargeFont.cpp" />
     <ClCompile Include="ResolveHost.cpp" />
     <ClCompile Include="WolIrcServer.cpp" />

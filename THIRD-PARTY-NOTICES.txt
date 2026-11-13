@@ -111,6 +111,19 @@ c) ReShade shaders: crosire/reshade-shaders (incl. SMAA by Jorge Jimenez et al.,
    MIT License) and CeeJayDK/SweetFX (MIT License). Their license files are
    included in graphics\licenses.
 
+d) Glamarye Fast Effects by Robert Jessop (rj200) -
+   https://github.com/rj200/Glamarye_Fast_Effects_for_ReShade
+   Used by the "HD" graphics look (ambient occlusion, fake global illumination).
+   MIT License, Copyright (c) 2021 Robert Jessop (main shader), Alex Tuderan
+   (blur functions). The license file is included in graphics\licenses.
+
+e) ReShade add-on API headers (EmperorHooks/reshade, from crosire/reshade v6.8.0),
+   compiled into EmperorHooks.dll. BSD 3-Clause License (or MIT),
+   Copyright (C) 2014 Patrick Mours; reshade_overlay.hpp also
+   Copyright (C) 2014-2026 Omar Cornut. See EmperorHooks/reshade/LICENSE.md.
+
+Our own shader EmperorBloom.fx (graphics/reshade-shaders) is part of Emperor Spice.
+
 --------------------------------------------------------------------------------
 Large in-game text (folder "fonts")
 

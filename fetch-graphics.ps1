@@ -8,7 +8,8 @@
   unmodified, as assets of the GitHub release "thirdparty-v1" of this repository (the official servers
   remove old versions, so they cannot be pinned there). Every file is checked against its SHA256 below -
   the build fails if anything differs. The shaders come from their official GitHub repositories,
-  pinned to a commit.
+  pinned to a commit. Glamarye (ambient occlusion + fake GI for the "HD" look) is MIT licensed;
+  only its main shader file is taken. Our own shaders and presets come from graphics/.
 
   To update a component: attach the new file to a release, then change its line below
   (file name + SHA256).
@@ -36,6 +37,7 @@ $DgVoodoo = @{ File = "dgVoodoo2_87_6.zip";      Sha256 = "9afa493396feec7108f42
 $ReShade  = @{ File = "ReShade_Setup_6.8.0.exe"; Sha256 = "207aea16205fbf952bc8fe1879966672454cf04002e7ad34237c7990a5b3c0b4" }
 $Shaders  = @{ Repo = "https://github.com/crosire/reshade-shaders"; Commit = "fd0022170615ce0d8162d219bff07232fa6dd84f" }
 $SweetFx  = @{ Repo = "https://github.com/CeeJayDK/SweetFX";        Commit = "93ddf39b357f5da534ed6d34ba4ec8cc7dcfa361" }
+$Glamarye = @{ Repo = "https://github.com/rj200/Glamarye_Fast_Effects_for_ReShade"; Commit = "9dd9b826fa2cbea818ef1bc487e5f2e7f427c750" }
 # ----------------------------------------------------------------------------------------------
 
 function Get-Verified([hashtable]$item, [string]$dest) {
@@ -131,14 +133,30 @@ foreach ($src in @(@{ Name = "reshade-shaders"; Repo = $Shaders.Repo; Commit = $
   }
   Write-Host "  $($src.Name) @ $($src.Commit)"
 }
-foreach ($fx in @("SMAA.fx", "Curves.fx", "Vibrance.fx", "LumaSharpen.fx", "ReShade.fxh")) {
-  if (-not (Get-ChildItem $shaderOut -Recurse -Filter $fx)) { throw "Shader file $fx missing." }
-}
+# --- Glamarye Fast Effects (MIT), pinned to a commit: only the main shader file -----------------
+$glmDir = Join-Path $work "Glamarye"
+git init -q $glmDir
+git -C $glmDir fetch -q --depth 1 $Glamarye.Repo $Glamarye.Commit
+if ($LASTEXITCODE -ne 0) { throw "git fetch failed: $($Glamarye.Repo) $($Glamarye.Commit)" }
+git -C $glmDir checkout -q FETCH_HEAD
+$glmOut = Join-Path (Join-Path $shaderOut "Shaders") "Glamarye"
+New-Item -ItemType Directory -Path $glmOut -Force | Out-Null
+Copy-Item (Join-Path (Join-Path $glmDir "Shaders") "Glamayre_Fast_Effects.fx") $glmOut
+Copy-Item (Join-Path $glmDir "LICENSE") (Join-Path $glmOut "LICENSE.txt")
+Copy-Item (Join-Path $glmDir "LICENSE") (Join-Path $lic "Glamarye-LICENSE.txt")
+Write-Host "  Glamarye @ $($Glamarye.Commit)"
 
-# --- our own config ---------------------------------------------------------------------------
+# --- our own config and shaders -----------------------------------------------------------------
 $ours = Join-Path $PSScriptRoot "graphics"
 Copy-Item (Join-Path $ours "ReShade.ini")        $gfx
 Copy-Item (Join-Path $ours "Emperor_Modern.ini") $gfx
+Copy-Item (Join-Path $ours "Emperor_HD.ini")     $gfx
+Copy-Item (Join-Path (Join-Path $ours "reshade-shaders") "*") $shaderOut -Recurse -Force
+
+foreach ($fx in @("SMAA.fx", "Curves.fx", "Vibrance.fx", "LumaSharpen.fx", "ReShade.fxh",
+                  "CAS.fx", "DisplayDepth.fx", "Glamayre_Fast_Effects.fx", "EmperorBloom.fx")) {
+  if (-not (Get-ChildItem $shaderOut -Recurse -Filter $fx)) { throw "Shader file $fx missing." }
+}
 
 Remove-Item $work -Recurse -Force
 Write-Host "Graphics pack ready: $gfx" -ForegroundColor Green
