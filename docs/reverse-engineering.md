@@ -2,7 +2,7 @@
 
 Alles hier gilt für **Game.exe v1.09**, MD5 `7dc4fda2f6b7e8a6b70e846686a81938`. Diese Datei ist für die deutsche und die englische Version identisch. Der Launcher prüft die MD5 vor jedem Start, deshalb dürfen die Hooks mit festen Adressen arbeiten. Jeder Patch prüft außerdem die Originalbytes, bevor er schreibt.
 
-Werkzeuge: `tools/re/re_tools.py` (pefile + capstone), `tools/re/rfd.py` (Archive).
+Werkzeuge: `tools/re/re_tools.py` (pefile + capstone), `tools/re/rfd.py` (Archive). Was alte Community-Tools über Karten, Musik/Sprache (BAG) und `rules.txt` verraten, steht in [`tools-and-formats.md`](tools-and-formats.md).
 
 ---
 
@@ -47,6 +47,7 @@ Werkzeuge: `tools/re/re_tools.py` (pefile + capstone), `tools/re/rfd.py` (Archiv
 - `test.CPF`: 256×256 RGB565, Variante für niedrige Detailstufe.
 - `texture.dat`: 2048×2048, 8 Bit, Schattenkarte.
 - `test.xbf`: Geländenetz; `test.lit`: Licht.
+- Laut Map-Editor-Handbuch sind die Gelände-Schatten vorgebacken (Shadowmaker), nur Gebäude und Einheiten werfen Echtzeit-Schatten. Pflichtdateien einer Karte: siehe tools-and-formats.md.
 - **Lädt zuerst `test.tga`**, falls vorhanden („Loading TGA Wash“, Funktion `0x54f680`). Die Größe ist beliebig quadratisch, Blockgröße = Breite/8.
 - Ergebnis eines Tests mit 2x per Real-ESRGAN: **im Spiel kaum sichtbar**. Der Wash ist nur eine weiche Farbschicht, die scharfen Risse und Krusten kommen von gekachelten Detailtexturen aus 3DDATA. Nicht weiterverfolgt.
 

@@ -32,6 +32,9 @@ Dateien: `graphics/experimental/`
 - Noch unklar: Kommt ReShade unter dgVoodoo mit 2x überhaupt an die Tiefe? Zum Prüfen gibt es die Taste **Ende** (DisplayDepth), ein Screenshot davon fehlt noch.
 - Wird es übernommen, muss `fetch-graphics.ps1` Glamarye (gepinnter Commit) mitladen, und der Launcher bekommt die Wahl zwischen den Presets „Klassisch“ und „HD“.
 
+### Community-Tools gesichtet (13.11.)
+Siehe `docs/tools-and-formats.md`: BAG-Format (Musik/Sprache) komplett, Pflichtdateien einer Karte, `rules.txt`. Offen: ob das Spiel lose Dateien in `Data\<PREFIX>\` lädt (der Visual Mod Creator nutzt `Data\Model\rules.txt`). Die Tools selbst liegen nicht im Repo.
+
 ### Roadmap (vom Projektinhaber bestätigt, Schwerpunkt: **bessere Grafik**)
 1. **Bild:** Grafik-Preset HD (läuft). Danach **höchste Modell-Detailstufe erzwingen** (H0 statt H1/H2/M3, gerade mit Zoom sichtbar, noch nicht untersucht). Danach eventuell Icons aus den 3D-Modellen neu rendern (groß).
 2. **Steuerung:** Komfortfunktionen. Was der Projektinhaber vermisst, ist noch nicht gefragt.
