@@ -62,7 +62,11 @@ Werkzeuge: `tools/re/re_tools.py` (pefile + capstone), `tools/re/rfd.py` (Archiv
 - MSAA in dgVoodoo **hängt das Spiel auf**. Supersampling über `[DirectX] Resolution = 2x` mit `Resampling = lanczos-3` ist der Test-Stand.
 - ReShade wird von EmperorHooks per `LoadLibrary("ReShade32.dll")` aus dem data-Ordner geladen. Ein Proxy über dxgi/d3d11 funktioniert mit dgVoodoo nicht.
 - Tiefe für ReShade: In Menüs ist sie leer. Effekte, die die Tiefe brauchen, müssen dort aussetzen, sonst wird das Bild schwarz.
-- Modelle gibt es in Detailstufen (`*_H0/H1/H2/M3.xbf`, „Cached …“ im Log). Idee: immer die höchste Stufe erzwingen. **Noch nicht untersucht.**
+- **Modell-Dateinamen `*_H0/H1/H2/M3/HC.xbf` sind keine Entfernungs-LODs, sondern Schadensstufen** (untersucht 13.11.):
+  - Name wird bei `0x4f7c50` gebaut: `sprintf("%s%s_%c%c.xbf", …)`. Buchstabe = `"LMH"[[0x60f700]]`, Ziffer = `"C0123"[slot]`.
+  - `[0x60f700]` = Spieloption **ModelLOD** (0 = Low, 1 = Medium, 2 = High), wird bei Missionsstart aus den Grafik-Einstellungen kopiert (`0x576745`). Standard und im Log des Testers: **H**, also schon die höchste Stufe. Fehlt eine Datei, probiert das Spiel die anderen Buchstaben (daher `M3`, ein `H3` gibt es nicht).
+  - Slot-Auswahl bei `0x4fc7a0`: Verhältnis aktuelle/maximale Lebenspunkte. Über 0,66 (`[0x5d4408]`) → Slot 1 (`H0`, heil), über 0,33 (`[0x5d4404]`) → Slot 2 (`H1`), über 0 → Slot 3 (`H2`), sonst Slot 4 (`M3`, Ruine). Typen 0x35–0x37 → Slot 0 (`HC`, im Bau).
+  - Ergebnis: Es gibt keine gröberen Modelle bei weitem Zoom. **„Höchste Detailstufe erzwingen“ bringt nichts**, das Spiel nutzt sie schon.
 
 ## Netzwerk (WOL-Emulation aus Emperor Reborn)
 
