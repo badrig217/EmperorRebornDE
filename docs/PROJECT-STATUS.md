@@ -19,6 +19,13 @@ Alles davon hat der Projektinhaber auf Windows 11, deutsche Version, 2560×1440,
 
 ## Offen
 
+## Ziel: „Emperor Spice Remaster“ (Vision des Projektinhabers, 14.11.)
+Vorbild: **Mass Effect Legendary Edition**. Die alte Engine bleibt, drumherum wird alles modernisiert, damit sich das Spiel 2026 zeitgemäß anfühlt.
+- Fertig: moderne Auflösungen, Breitbild, Schrift, Kamera-Zoom; Grafikstil HD (Kantenglättung, Licht, Farben); Stabilität, Multiplayer, Wine, Mods.
+- Als Nächstes: **Grafik-Werkstatt** im Launcher (Icons, Texturen, Boden per KI + Remaster, beim Spieler lokal, als Mod eingebunden, mit Fortschrittsanzeige).
+- Später: Seitenleiste/Oberfläche neu in HD; **Videos** in HD (Bink 640×480 → KI-Video, eigene Wiedergabe über den Film-Hook; erst Test mit einer kurzen `.bik`); Bugfixes des Originals; Komfort (Steuerung, Speicherstände, Auflösung automatisch).
+- Grenzen: 3D-Modelle und Animationen bleiben von 2001; keine modernen Materialien (Normal Maps) in der Engine, der moderne Look wird in die Texturen gebacken.
+
 ### Pull Requests / Branches
 - PR #7 (Wine/Proton), #8 (Projektstand) und #9 (Mod-Ordner) sind gemergt, aber noch in keinem Release. Wine ist ungetestet.
 - Lokale Branches (`large-font`, `camera-zoom`, `mp-hardening`, `release-1.1`, `cleanup`, `german-support`) sind gemergt und können gelöscht werden.
@@ -34,8 +41,18 @@ Alles davon hat der Projektinhaber auf Windows 11, deutsche Version, 2560×1440,
 ### Community-Tools gesichtet (13.11.)
 Siehe `docs/tools-and-formats.md`: BAG-Format (Musik/Sprache) komplett, Pflichtdateien einer Karte, `rules.txt`. Offen: ob das Spiel lose Dateien in `Data\<PREFIX>\` lädt (der Visual Mod Creator nutzt `Data\Model\rules.txt`). Die Tools selbst liegen nicht im Repo.
 
+### Geplant: Grafik-Werkstatt im Launcher (Stand 14.11., noch nicht gebaut)
+Ergebnis der Tests mit Test-Mods (Prototyp-Skripte lokal, nicht im Repo):
+- **Icons:** alle (auch Infanterie, graue Varianten) Scanlines entfernen (vertikaler [1,2,1]/4-Filter), Real-ESRGAN x4plus 4-fach, auf 128 px. Gefiel besser als 3D-Neu-Rendern (näher am Original, kein Renderer nötig).
+- **Texturen (im Spiel getestet, HD-Test4 passt):** Real-ESRGAN 4-fach → „Remaster dezent“ (Relief, Staub, Kanten, Struktur) → mit Lanczos auf **2-fach** verkleinern (4-fach treppte an harten Linien; Mipmaps waren nicht die Ursache, `Mipmapping=autogen_bilinear` brachte nichts). Effekt-Texturen (Flash, Spot, Halo …) auslassen. Magenta-Farbschlüssel exakt erhalten.
+- **Hausfarbe:** Pixel, die im Original reines Blau sind (R=G=0, Stufen u. a. 146/165/190/220/255), müssen nach dem Hochrechnen wieder exakt reines Blau in den Original-Stufen sein (Maske aus dem Original, nächster Nachbar). Sonst erkennt das Spiel sie nicht als Hausfarbe („Recolour Textures“) und färbt sie nicht in der Spielerfarbe.
+- Größe für alle ~2.460 Texturen bei 2-fach ≈ 350 MB.
+- **Boden (176 Gelände-Texturen aus den test.xbf der Karten, liegen in 3DDATA, 128 px, gekachelt):** Real-ESRGAN **4-fach, ohne Remaster** (Variante „A“, im Spiel besser als mit Remaster), nahtlos durch Wrap-Padding vor dem Hochrechnen. Danach feine dunkle Linien nur in glatten Sandflächen dämpfen (Black-Top-Hat, Maske „warm, hell, wenig Struktur“); sonst entsteht auf Sandrampen ein sichtbares Linienraster. Fels, Klippen, Eis bleiben unberührt.
+- **Anforderungen des Projektinhabers:** Fortschrittsanzeige im Launcher; das Ergebnis wird **als Mod eingebunden** (an/abschaltbar, wie der Mod-Ordner). Alles entsteht beim Spieler lokal (EA-Daten).
+- Mitzuliefern: realesrgan-ncnn-vulkan (Windows, Real-ESRGAN v0.2.5.0, BSD-3/MIT) mit Modell x4plus; Fallback ohne Vulkan: normales Hochrechnen.
+
 ### Roadmap (vom Projektinhaber bestätigt, Schwerpunkt: **bessere Grafik**)
-1. **Bild:** Grafikstil HD (PR #10, fertig). Danach **höchste Modell-Detailstufe erzwingen** (H0 statt H1/H2/M3, gerade mit Zoom sichtbar, noch nicht untersucht). Danach eventuell Icons aus den 3D-Modellen neu rendern (groß).
+1. **Bild:** Grafikstil HD (PR #10). Höchste Modell-Detailstufe erzwingen: **untersucht, bringt nichts** (H0/H1/H2/M3 sind Schadensstufen, die Detailstufe steht schon auf High, siehe reverse-engineering.md). Bleibt: eventuell Icons aus den 3D-Modellen neu rendern (groß).
 2. **Steuerung:** Komfortfunktionen. Was der Projektinhaber vermisst, ist noch nicht gefragt.
 3. **Technik:** Der Launcher soll beim ersten Start die Monitorauflösung vorschlagen statt 1280×720. Das ist klein und wirkt groß. Außerdem Multiplayer ohne Portfreigabe (schwer: Vermittlungsserver oder ZeroTier/Tailscale) und Speicherstände in „Dokumente“.
 4. **Gefühl:** Effekte und Stimmung (zum Teil schon im HD-Preset).
