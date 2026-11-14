@@ -179,7 +179,10 @@ namespace graphicsPack
         {
           fs::copy_file(sourceDir / name, gameDir / name, fs::copy_options::overwrite_existing, ec);
           if (ec)
-            return L"copy " + fs::path(name).wstring() + L": " + std::wstring(ec.message().begin(), ec.message().end());
+          {
+            const std::string msg = ec.message(); // one string: begin() and end() must come from the same object
+            return L"copy " + fs::path(name).wstring() + L": " + std::wstring(msg.begin(), msg.end());
+          }
         }
       }
       for (const char* name : configFiles)

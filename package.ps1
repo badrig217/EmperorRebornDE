@@ -23,7 +23,8 @@
 param(
   [string]$Version = "1.1",
   [switch]$SkipBuild,
-  # Skip downloading the graphics pack (dgVoodoo2 + ReShade) - the zip then contains no graphics folder.
+  # Skip downloading the graphics pack (dgVoodoo2 + ReShade) and the graphics workshop (Real-ESRGAN) - the zip
+  # then contains no graphics and hdtools folders.
   [switch]$SkipGraphics,
   # Optional toolset override. Local builds leave it empty and use the project's toolset; CI passes a
   # toolset that exists on the runner (e.g. v143 on windows-latest) since the dev machine uses a newer one.
@@ -104,6 +105,12 @@ Copy-Item (Join-Path $root "modding\MODDING.md") (Join-Path $stageDir "mods\READ
 if (-not $SkipGraphics) {
   & (Join-Path $root "fetch-graphics.ps1")
   Copy-Item (Join-Path $root "build-graphics\graphics") (Join-Path $stageDir "graphics") -Recurse
+}
+
+# --- graphics workshop: Real-ESRGAN for the "HD textures (AI)" option (official release, SHA256 pinned) ---
+if (-not $SkipGraphics) {
+  & (Join-Path $root "fetch-hdtools.ps1")
+  Copy-Item (Join-Path $root "build-graphics\hdtools") (Join-Path $stageDir "hdtools") -Recurse
 }
 
 # --- checksums of the contents ----------------------------------------------

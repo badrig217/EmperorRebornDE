@@ -125,6 +125,32 @@ e) ReShade add-on API headers (EmperorHooks/reshade, from crosire/reshade v6.8.0
 Our own shader EmperorBloom.fx (graphics/reshade-shaders) is part of Emperor Spice.
 
 --------------------------------------------------------------------------------
+Graphics workshop (folder "hdtools", downloaded unmodified at build time from the
+official Real-ESRGAN release v0.2.5.0 by fetch-hdtools.ps1)
+
+The launcher runs these programs on the player's PC to upscale the player's own
+game textures. No game data is shipped; the result stays on the player's PC.
+The full license texts are in hdtools\LICENSES.txt.
+
+a) Real-ESRGAN by Xintao Wang - https://github.com/xinntao/Real-ESRGAN
+   Model realesrgan-x4plus. BSD 3-Clause License, Copyright (c) 2021, Xintao Wang.
+
+b) Real-ESRGAN-ncnn-vulkan - https://github.com/xinntao/Real-ESRGAN-ncnn-vulkan
+   realesrgan-ncnn-vulkan.exe. MIT License, Copyright (c) 2021 Xintao Wang,
+   based on realsr-ncnn-vulkan, Copyright (c) 2019 nihui (MIT License).
+
+c) ncnn by Tencent - https://github.com/Tencent/ncnn
+   Compiled into realesrgan-ncnn-vulkan.exe. BSD 3-Clause License,
+   Copyright (C) 2017 Tencent.
+
+d) vcomp140.dll - Microsoft Visual C++ OpenMP runtime, redistributed with the
+   program above under the Microsoft Visual Studio redistribution terms.
+
+e) stb_image and stb_image_write by Sean Barrett - https://github.com/nothings/stb
+   (EmperorLauncher/third_party), compiled into EmperorSpice.exe.
+   Public domain (Unlicense) or MIT License, at your choice.
+
+--------------------------------------------------------------------------------
 Large in-game text (folder "fonts")
 
 The HD font sheets in fonts\3DDATA.RFD are rendered from DejaVu Sans

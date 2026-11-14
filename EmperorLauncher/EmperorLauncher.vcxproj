@@ -91,6 +91,7 @@
     <ClCompile Include="Installer.cpp" />
     <ClCompile Include="md5.c" />
     <ClCompile Include="NetworkTest.cpp" />
+    <ClCompile Include="TextureWorkshop.cpp" />
     <ClCompile Include="..\EmperorHooks\ResolveHost.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -99,6 +100,10 @@
     <ClInclude Include="GraphicsPack.hpp" />
     <ClInclude Include="FontPack.hpp" />
     <ClInclude Include="ModPack.hpp" />
+    <ClInclude Include="TextureWorkshop.hpp" />
+    <ClInclude Include="TextureWorkshopUi.hpp" />
+    <ClInclude Include="HdWorkshopCore.hpp" />
+    <ClInclude Include="HdImage.hpp" />
     <ClInclude Include="Shortcut.hpp" />
     <ClInclude Include="IsoReader.hpp" />
     <ClInclude Include="md5.h" />
