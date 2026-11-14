@@ -35,6 +35,13 @@ Dateien: `graphics/experimental/`
 ### Community-Tools gesichtet (13.11.)
 Siehe `docs/tools-and-formats.md`: BAG-Format (Musik/Sprache) komplett, Pflichtdateien einer Karte, `rules.txt`. Offen: ob das Spiel lose Dateien in `Data\<PREFIX>\` lädt (der Visual Mod Creator nutzt `Data\Model\rules.txt`). Die Tools selbst liegen nicht im Repo.
 
+### Geplant: Grafik-Werkstatt im Launcher (Stand 14.11., noch nicht gebaut)
+Ergebnis der Tests mit Test-Mods (Prototyp-Skripte lokal, nicht im Repo):
+- **Icons:** alle (auch Infanterie, graue Varianten) Scanlines entfernen (vertikaler [1,2,1]/4-Filter), Real-ESRGAN x4plus 4-fach, auf 128 px. Gefiel besser als 3D-Neu-Rendern (näher am Original, kein Renderer nötig).
+- **Texturen:** Real-ESRGAN 4-fach, dann „Remaster dezent“ einbacken (Relief aus Helligkeit, Staub in Vertiefungen, abgenutzte Kanten, feine Struktur). Hausfarben-Blau und Magenta-Farbschlüssel unverändert lassen, Effekt-Texturen (Flash, Spot, Halo …) auslassen. Ziel wohl 2-fach (alle ~2.460 Texturen: 4-fach ≈ 1,4 GB, 2-fach ≈ 350 MB). Test im Spiel steht aus (HD-Test2).
+- **Anforderungen des Projektinhabers:** Fortschrittsanzeige im Launcher; das Ergebnis wird **als Mod eingebunden** (an/abschaltbar, wie der Mod-Ordner). Alles entsteht beim Spieler lokal (EA-Daten).
+- Mitzuliefern: realesrgan-ncnn-vulkan (Windows, Real-ESRGAN v0.2.5.0, BSD-3/MIT) mit Modell x4plus; Fallback ohne Vulkan: normales Hochrechnen.
+
 ### Roadmap (vom Projektinhaber bestätigt, Schwerpunkt: **bessere Grafik**)
 1. **Bild:** Grafikstil HD (PR #10). Höchste Modell-Detailstufe erzwingen: **untersucht, bringt nichts** (H0/H1/H2/M3 sind Schadensstufen, die Detailstufe steht schon auf High, siehe reverse-engineering.md). Bleibt: eventuell Icons aus den 3D-Modellen neu rendern (groß).
 2. **Steuerung:** Komfortfunktionen. Was der Projektinhaber vermisst, ist noch nicht gefragt.
