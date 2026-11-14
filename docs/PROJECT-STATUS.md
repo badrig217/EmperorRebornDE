@@ -45,7 +45,9 @@ Siehe `docs/tools-and-formats.md`: BAG-Format (Musik/Sprache) komplett, Pflichtd
 ### Geplant: Grafik-Werkstatt im Launcher (Stand 14.11., noch nicht gebaut)
 Ergebnis der Tests mit Test-Mods (Prototyp-Skripte lokal, nicht im Repo):
 - **Icons:** alle (auch Infanterie, graue Varianten) Scanlines entfernen (vertikaler [1,2,1]/4-Filter), Real-ESRGAN x4plus 4-fach, auf 128 px. Gefiel besser als 3D-Neu-Rendern (näher am Original, kein Renderer nötig).
-- **Texturen:** Real-ESRGAN 4-fach, dann „Remaster dezent“ einbacken (Relief aus Helligkeit, Staub in Vertiefungen, abgenutzte Kanten, feine Struktur). Hausfarben-Blau und Magenta-Farbschlüssel unverändert lassen, Effekt-Texturen (Flash, Spot, Halo …) auslassen. Ziel wohl 2-fach (alle ~2.460 Texturen: 4-fach ≈ 1,4 GB, 2-fach ≈ 350 MB). Test im Spiel steht aus (HD-Test2).
+- **Texturen (im Spiel getestet, HD-Test4 passt):** Real-ESRGAN 4-fach → „Remaster dezent“ (Relief, Staub, Kanten, Struktur) → mit Lanczos auf **2-fach** verkleinern (4-fach treppte an harten Linien; Mipmaps waren nicht die Ursache, `Mipmapping=autogen_bilinear` brachte nichts). Effekt-Texturen (Flash, Spot, Halo …) auslassen. Magenta-Farbschlüssel exakt erhalten.
+- **Hausfarbe:** Pixel, die im Original reines Blau sind (R=G=0, Stufen u. a. 146/165/190/220/255), müssen nach dem Hochrechnen wieder exakt reines Blau in den Original-Stufen sein (Maske aus dem Original, nächster Nachbar). Sonst erkennt das Spiel sie nicht als Hausfarbe („Recolour Textures“) und färbt sie nicht in der Spielerfarbe.
+- Größe für alle ~2.460 Texturen bei 2-fach ≈ 350 MB.
 - **Anforderungen des Projektinhabers:** Fortschrittsanzeige im Launcher; das Ergebnis wird **als Mod eingebunden** (an/abschaltbar, wie der Mod-Ordner). Alles entsteht beim Spieler lokal (EA-Daten).
 - Mitzuliefern: realesrgan-ncnn-vulkan (Windows, Real-ESRGAN v0.2.5.0, BSD-3/MIT) mit Modell x4plus; Fallback ohne Vulkan: normales Hochrechnen.
 
