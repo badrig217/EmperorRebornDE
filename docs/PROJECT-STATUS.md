@@ -19,6 +19,13 @@ Alles davon hat der Projektinhaber auf Windows 11, deutsche Version, 2560×1440,
 
 ## Offen
 
+## Ziel: „Emperor Spice Remaster“ (Vision des Projektinhabers, 14.11.)
+Vorbild: **Mass Effect Legendary Edition**. Die alte Engine bleibt, drumherum wird alles modernisiert, damit sich das Spiel 2026 zeitgemäß anfühlt.
+- Fertig: moderne Auflösungen, Breitbild, Schrift, Kamera-Zoom; Grafikstil HD (Kantenglättung, Licht, Farben); Stabilität, Multiplayer, Wine, Mods.
+- Als Nächstes: **Grafik-Werkstatt** im Launcher (Icons, Texturen, Boden per KI + Remaster, beim Spieler lokal, als Mod eingebunden, mit Fortschrittsanzeige).
+- Später: Seitenleiste/Oberfläche neu in HD; **Videos** in HD (Bink 640×480 → KI-Video, eigene Wiedergabe über den Film-Hook; erst Test mit einer kurzen `.bik`); Bugfixes des Originals; Komfort (Steuerung, Speicherstände, Auflösung automatisch).
+- Grenzen: 3D-Modelle und Animationen bleiben von 2001; keine modernen Materialien (Normal Maps) in der Engine, der moderne Look wird in die Texturen gebacken.
+
 ### Pull Requests / Branches
 - **PR #7 – Linux/Steam Deck/macOS (Wine/Proton/CrossOver)**: Fix aus 2dChans Fork (`OaEnablePerUserTLibRegistration` dynamisch laden). Build ist grün. **Noch nicht gemergt und nicht in v1.1 enthalten.** Unter Windows ändert sich nichts. Unter Linux ist es ungetestet.
 - Lokale Branches (`large-font`, `camera-zoom`, `mp-hardening`, `release-1.1`, `cleanup`, `german-support`) sind gemergt und können gelöscht werden.
