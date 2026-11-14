@@ -1,6 +1,6 @@
 # Emperor Spice: Projektstand
 
-Stand: 13.11.2026 · Repo: https://github.com/badrig217/EmperorSpice · Aktuelles Release: **v1.1** (7.11.2026)
+Stand: 14.11.2026 · Repo: https://github.com/badrig217/EmperorSpice · Aktuelles Release: **v1.1** (7.11.2026)
 
 ## Worum es geht
 
@@ -22,7 +22,7 @@ Alles davon hat der Projektinhaber auf Windows 11, deutsche Version, 2560×1440,
 ## Ziel: „Emperor Spice Remaster“ (Vision des Projektinhabers, 14.11.)
 Vorbild: **Mass Effect Legendary Edition**. Die alte Engine bleibt, drumherum wird alles modernisiert, damit sich das Spiel 2026 zeitgemäß anfühlt.
 - Fertig: moderne Auflösungen, Breitbild, Schrift, Kamera-Zoom; Grafikstil HD (Kantenglättung, Licht, Farben); Stabilität, Multiplayer, Wine, Mods.
-- Als Nächstes: **Grafik-Werkstatt** im Launcher (Icons, Texturen, Boden per KI + Remaster, beim Spieler lokal, als Mod eingebunden, mit Fortschrittsanzeige).
+- In Arbeit: **Grafik-Werkstatt** im Launcher (Icons, Texturen, Boden per KI + Remaster, beim Spieler lokal, als Mod eingebunden, mit Fortschrittsanzeige). Gebaut, Spieltest steht aus (siehe unten).
 - Später: Seitenleiste/Oberfläche neu in HD; **Videos** in HD (Bink 640×480 → KI-Video, eigene Wiedergabe über den Film-Hook; erst Test mit einer kurzen `.bik`); Bugfixes des Originals; Komfort (Steuerung, Speicherstände, Auflösung automatisch).
 - Grenzen: 3D-Modelle und Animationen bleiben von 2001; keine modernen Materialien (Normal Maps) in der Engine, der moderne Look wird in die Texturen gebacken.
 
@@ -41,15 +41,25 @@ Vorbild: **Mass Effect Legendary Edition**. Die alte Engine bleibt, drumherum wi
 ### Community-Tools gesichtet (13.11.)
 Siehe `docs/tools-and-formats.md`: BAG-Format (Musik/Sprache) komplett, Pflichtdateien einer Karte, `rules.txt`. Offen: ob das Spiel lose Dateien in `Data\<PREFIX>\` lädt (der Visual Mod Creator nutzt `Data\Model\rules.txt`). Die Tools selbst liegen nicht im Repo.
 
-### Geplant: Grafik-Werkstatt im Launcher (Stand 14.11., noch nicht gebaut)
-Ergebnis der Tests mit Test-Mods (Prototyp-Skripte lokal, nicht im Repo):
-- **Icons:** alle (auch Infanterie, graue Varianten) Scanlines entfernen (vertikaler [1,2,1]/4-Filter), Real-ESRGAN x4plus 4-fach, auf 128 px. Gefiel besser als 3D-Neu-Rendern (näher am Original, kein Renderer nötig).
-- **Texturen (im Spiel getestet, HD-Test4 passt):** Real-ESRGAN 4-fach → „Remaster dezent“ (Relief, Staub, Kanten, Struktur) → mit Lanczos auf **2-fach** verkleinern (4-fach treppte an harten Linien; Mipmaps waren nicht die Ursache, `Mipmapping=autogen_bilinear` brachte nichts). Effekt-Texturen (Flash, Spot, Halo …) auslassen. Magenta-Farbschlüssel exakt erhalten.
-- **Hausfarbe:** Pixel, die im Original reines Blau sind (R=G=0, Stufen u. a. 146/165/190/220/255), müssen nach dem Hochrechnen wieder exakt reines Blau in den Original-Stufen sein (Maske aus dem Original, nächster Nachbar). Sonst erkennt das Spiel sie nicht als Hausfarbe („Recolour Textures“) und färbt sie nicht in der Spielerfarbe.
-- Größe für alle ~2.460 Texturen bei 2-fach ≈ 350 MB.
-- **Boden (176 Gelände-Texturen aus den test.xbf der Karten, liegen in 3DDATA, 128 px, gekachelt):** Real-ESRGAN **4-fach, ohne Remaster** (Variante „A“, im Spiel besser als mit Remaster), nahtlos durch Wrap-Padding vor dem Hochrechnen. Danach feine dunkle Linien nur in glatten Sandflächen dämpfen (Black-Top-Hat, Maske „warm, hell, wenig Struktur“); sonst entsteht auf Sandrampen ein sichtbares Linienraster. Fels, Klippen, Eis bleiben unberührt.
-- **Anforderungen des Projektinhabers:** Fortschrittsanzeige im Launcher; das Ergebnis wird **als Mod eingebunden** (an/abschaltbar, wie der Mod-Ordner). Alles entsteht beim Spieler lokal (EA-Daten).
-- Mitzuliefern: realesrgan-ncnn-vulkan (Windows, Real-ESRGAN v0.2.5.0, BSD-3/MIT) mit Modell x4plus; Fallback ohne Vulkan: normales Hochrechnen.
+### Grafik-Werkstatt im Launcher (Branch `hd-workshop`, gebaut 14.11., Spieltest steht aus)
+**Bedienung:** Im Launcher unter „Grafik“ das Häkchen **„HD-Texturen (KI)“** und der Knopf **„Erzeugen…“** (danach „Neu erzeugen…“). Erzeugt wird nur auf Knopfdruck bzw. nach Rückfrage beim Anhaken. Fortschrittsfenster mit Balken, „x von y Texturen“, Restzeit und „Abbrechen“. Registry: `HDTextures` (0/1).
+
+**Ablauf** (`EmperorLauncher/TextureWorkshop.*`, `HdWorkshopCore.hpp`, `HdImage.hpp`, `TextureWorkshopUi.hpp`):
+- Liest alle `Textures\*.tga` aus den 3DDATA-Archiven (je Name die neueste; Archive mit Mod- oder HD-Markierung zählen nicht) und die Bodentextur-Liste aus den `test.xbf` der Karten (MAPS-Archive).
+- Sortiert: Icons (64×64 mit `Grey_`-Gegenstück) → Effekte (auslassen: `!`, `@`, `%` am Anfang, flash/spot/halo/beam/glow/muzzle) → Boden → Modell-Texturen. Ausgelassen: kleiner als 16 oder größer als 256 px, nur Magenta, Palettenbilder.
+- In Paketen zu 48 Stück: Vorbereiten → `hdtools\realesrgan-ncnn-vulkan.exe` (ohne Fenster, Ausgabe in `hdtextures\realesrgan.log`) → Nachbearbeitung in bis zu 4 Threads → direkt ins Archiv schreiben (wenig Speicher, der Launcher ist 32 Bit).
+- Ergebnis: `<Spiel>\hdtextures\3DDATA_HD.RFH/.RFD` mit Markierung `EmperorSpice\HDTextures.txt`, ca. 400 MB. Beim „Spielen“ mit Häkchen wird es als nächstes freies `3DDATA00xx` nach DATA verschoben, ohne Häkchen wieder heraus (dahinterliegende Archive rücken nach). Mods gewinnen weiter, weil ihre Einträge neuer sind.
+
+**Rezepte** (aus den Test-Mods, im Spiel getestet):
+- **Icons:** Scanlines entfernen (vertikaler [1,2,1]/4-Filter), Real-ESRGAN x4plus 4-fach, Lanczos auf 128 px. Gefiel besser als 3D-Neu-Rendern.
+- **Texturen:** Magenta mit Nachbarfarben füllen → Real-ESRGAN 4-fach → „Remaster dezent“ (Relief 0.45, Staub 0.6, Kanten 0.6, Struktur 0.8) → Lanczos auf **2-fach** (4-fach treppte; Mipmaps waren nicht die Ursache) → **Hausfarbe** zurück: Pixel, die im Original reines Blau sind (R=G=0), werden wieder exakt reines Blau in den Original-Stufen, sonst färbt das Spiel sie nicht in der Spielerfarbe → Magenta-Schlüssel exakt zurück (erst ganz am Ende, so gibt es keine rosa Ränder) → Alpha aus dem Original hochskaliert.
+- **Boden** (176 Texturen, gekachelt): Wrap-Padding, Real-ESRGAN **4-fach, ohne Remaster**, zuschneiden, feine dunkle Linien nur in glatten Sandflächen dämpfen (sonst Linienraster auf Sandrampen). Fels, Klippen, Eis bleiben.
+
+**Geprüft:** Rechenkern unter Linux gegen die Test-Mods (Boden praktisch gleich, Abweichung 0,3; Icons/Gebäude sichtbar gleich, Unterschiede nur durch ncnn statt PyTorch und anderes Rauschen). Windows-Teil mit MinGW unter Wine: Real-ESRGAN-Start, Abbrechen (Prozess wird beendet, Arbeitsordner gelöscht), Fehlermeldung ohne Vulkan, kompletter Lauf über die Launcher-Oberfläche, Ein-/Ausschalten beim „Spielen“. Prüfwerkzeug: `tools/hdworkshop-check/` (läuft mit der Linux-Version von Real-ESRGAN).
+
+**Mitgeliefert:** `hdtools\` (38 MB) aus dem offiziellen Real-ESRGAN-Release v0.2.5.0, per SHA256 geprüft von `fetch-hdtools.ps1`: Programm, `vcomp140.dll`, Modell x4plus, `LICENSES.txt`. Ohne Vulkan-Treiber gibt es eine Fehlermeldung (kein Ersatzweg).
+
+**Noch offen:** Spieltest unter Windows mit echter Grafikkarte (Dauer, Aussehen aller Völker, Speicher). Nebenbei behoben: Absturz des Launchers, wenn das Grafik-Paket eine Datei nicht kopieren kann (statt Meldung).
 
 ### Roadmap (vom Projektinhaber bestätigt, Schwerpunkt: **bessere Grafik**)
 1. **Bild:** Grafikstil HD (PR #10). Höchste Modell-Detailstufe erzwingen: **untersucht, bringt nichts** (H0/H1/H2/M3 sind Schadensstufen, die Detailstufe steht schon auf High, siehe reverse-engineering.md). Bleibt: eventuell Icons aus den 3D-Modellen neu rendern (groß).

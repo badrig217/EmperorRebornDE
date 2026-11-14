@@ -7,6 +7,7 @@
 // before including this file (TextureWorkshop.cpp does).
 #include <algorithm>
 #include <atomic>
+#include <cctype>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>

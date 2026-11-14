@@ -29,6 +29,7 @@
 - **Weiter herauszoomen** (neu in 1.1): im Launcher unter „Kamera-Zoom“ bis 1,75x, empfohlen 1,5x.
 - **Große Meldungen und Hinweise im Spiel** (neu in 1.1): die kleine Spielschrift doppelt so groß und scharf, neu gezeichnet aus der freien Schrift DejaVu Sans. Ab 1440p wird sie automatisch vorgeschlagen.
 - **Mods ganz einfach** (neu): Dateien in den Ordner `mods` legen, der Launcher baut daraus beim Start die Spielarchive. Originaldateien als Vorlage holt `modding\Extract game files.cmd`. Anleitung: [modding/MODDING.md](modding/MODDING.md).
+- **HD-Texturen per KI** (neu, optional): Die Grafik-Werkstatt im Launcher rechnet die Texturen deines Spiels auf deinem PC mit KI (Real-ESRGAN) hoch: schärfere Bau-Icons, überarbeitete Einheiten und Gebäude mit erhaltener Spielerfarbe, schärferer Boden. Dauert einmalig etwa 5 bis 30 Minuten, danach per Häkchen an- und abschaltbar. Braucht eine Grafikkarte mit Vulkan (praktisch alle aktuellen).
 - **Geld-Cheat** (optional, nur Einzelspieler): im Launcher unter „Extras“ einschalten, dann gibt **Strg+Umschalt+G** im Spiel +25.000 Credits. Im Multiplayer ist er gesperrt.
 
 
@@ -86,6 +87,7 @@ Deine Änderungen im ReShade-Menü bleiben erhalten (am besten im Gefecht änder
 - **Texte im Spiel sehr klein:** Im Launcher unter „Extras“ **„Große Meldungen und Hinweise im Spiel“** anhaken. Alternativ eine der Auflösungen „Hochskaliert …, große UI“ wählen (dann wird das ganze Bild weicher).
 - **Grafik-Paket ausprobieren ohne Risiko:** Im Launcher den Grafikstil „Original“ wählen – alles ist wie vorher.
 - **HD ruckelt:** Grafikstil „Modern“ wählen.
+- **HD-Texturen lassen sich nicht erzeugen:** Grafiktreiber aktualisieren (Vulkan nötig). Details stehen in `data\hdtextures\realesrgan.log`. Ausschalten: Häkchen „HD-Texturen (KI)“ weg, dann ist alles wie vorher.
 - **Linux / Steam Deck / macOS (experimentell):** Emperor Spice soll unter Wine, Proton und CrossOver starten, zum Beispiel über Heroic oder Lutris. Ungetestet – Rückmeldungen sind willkommen! Bekannter Kniff aus der Community: im Launcher zuerst **ohne Vollbild** mit 1920 x 1080 starten und Vollbild erst danach in Wine/Heroic einschalten.
 
 ---
@@ -108,6 +110,7 @@ Deine Änderungen im ReShade-Menü bleiben erhalten (am besten im Gefecht änder
 - **Zoom out further** (new in 1.1): "Camera zoom" in the launcher, up to 1.75x (1.5x recommended).
 - **Large in-game messages and hints** (new in 1.1): the small in-game font at 2x, sharp, redrawn from the free DejaVu Sans font. Suggested automatically from 1440p.
 - **Easy modding** (new): drop files into the `mods` folder and the launcher builds the game archives at start. `modding\Extract game files.cmd` copies the original files as a starting point. Guide: [modding/MODDING.md](modding/MODDING.md).
+- **AI HD textures** (new, optional): the graphics workshop in the launcher upscales your game's textures on your PC with AI (Real-ESRGAN): sharper build icons, reworked units and buildings that keep the player colour, sharper terrain. Takes about 5 to 30 minutes once, then a tick box switches them on and off. Needs a Vulkan graphics card (practically all current ones).
 - **Money cheat** (optional, single player only): enable it under "Extras" in the launcher, then **Ctrl+Shift+G** adds 25,000 credits. Disabled in multiplayer.
 
 
@@ -140,6 +143,7 @@ Emperor Spice stands on the shoulders of others – thank you!
 - **[Emperor Reborn](https://github.com/azmawee/EmperorReborn)** by azmawee – widescreen, HUD, upscaling, multiplayer and the launcher this project is built on ([original README](docs/EmperorReborn-README.md), [how the widescreen was made](docs/widescreen-story.md)).
 - **[EmperorLauncher](https://github.com/wheybags/EmperorLauncher)** by Tom Mason (wheybags) – the original modern-Windows patch.
 - **Moro** – in-game HUD/sidebar widescreen patch, shared in the Emperor community.
+- **[Real-ESRGAN](https://github.com/xinntao/Real-ESRGAN)** by Xintao Wang et al. (with [ncnn](https://github.com/Tencent/ncnn) by Tencent) – AI upscaling for the HD textures.
 - **[dgVoodoo2](http://dege.freeweb.hu/dgVoodoo2/)** by Dege, **[ReShade](https://reshade.me)** by crosire, **[SweetFX](https://github.com/CeeJayDK/SweetFX)** by CeeJay.dk, SMAA by Jorge Jimenez et al.
 
 Details and licences: [`THIRD-PARTY-NOTICES.txt`](THIRD-PARTY-NOTICES.txt).
@@ -151,5 +155,5 @@ Emperor Spice is an unofficial fan project and not affiliated with Electronic Ar
 ## Für Entwickler / Building
 
 - Visual Studio 2022 (C++ workload), solution `EmperorLauncher.sln`, Release/x86.
-- `package.ps1` builds and packages the zip; `fetch-graphics.ps1` adds the graphics pack. dgVoodoo2 and ReShade are taken unmodified from the [`thirdparty-v1`](../../releases/tag/thirdparty-v1) release and verified by SHA256; shaders are pinned to a commit.
+- `package.ps1` builds and packages the zip; `fetch-graphics.ps1` adds the graphics pack, `fetch-hdtools.ps1` the graphics workshop (Real-ESRGAN, official release, SHA256-pinned). dgVoodoo2 and ReShade are taken unmodified from the [`thirdparty-v1`](../../releases/tag/thirdparty-v1) release and verified by SHA256; shaders are pinned to a commit.
 - Every push builds automatically via GitHub Actions (artifact `EmperorSpice-ci`).

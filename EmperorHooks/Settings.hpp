@@ -58,6 +58,10 @@ public:
   // dgVoodoo, ambient occlusion + indirect light (Glamarye), bloom, CAS sharpening). Launcher only.
   int graphicsStyle = 0;
 
+  // Grafik-Werkstatt: use the AI-upscaled HD textures (made by the launcher on request, see
+  // EmperorLauncher/TextureWorkshop.hpp). Off until the player has generated them. Launcher only.
+  bool hdTextures = false;
+
   // Single-player money cheat (Ctrl+Shift+G = +25,000 credits). Off by default, never active in multiplayer.
   bool moneyCheat = false;
 
@@ -159,6 +163,10 @@ public:
     if (moneyCheatTemp)
       moneyCheat = *moneyCheatTemp == "1";
 
+    std::optional<std::string> hdTexturesTemp = regReadString(key, "HDTextures");
+    if (hdTexturesTemp)
+      hdTextures = *hdTexturesTemp == "1";
+
     std::optional<std::string> modsTemp = regReadString(key, "Mods");
     if (modsTemp)
       mods = *modsTemp == "1";
@@ -196,6 +204,7 @@ public:
     regWriteString(key, "CameraZoom", std::to_string(cameraZoom));
     regWriteString(key, "LargeFont", largeFont ? "1" : "0");
     regWriteString(key, "Mods", mods ? "1" : "0");
+    regWriteString(key, "HDTextures", hdTextures ? "1" : "0");
 
     RegCloseKey(key);
   }

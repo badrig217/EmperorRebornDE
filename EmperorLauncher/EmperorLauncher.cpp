@@ -22,6 +22,7 @@
 #include "GraphicsPack.hpp"
 #include "FontPack.hpp"
 #include "ModPack.hpp"
+#include "TextureWorkshopUi.hpp"
 #include "Shortcut.hpp"
 #include "IsoReader.hpp"
 #include <commdlg.h>
@@ -334,6 +335,11 @@ HWND moneyCheatCheckbox = nullptr;
 HWND largeFontCheckbox = nullptr;
 HWND modsCheckbox = nullptr;
 HWND modsFolderButton = nullptr;
+HWND hdTexturesCheckbox = nullptr;
+HWND hdTexturesButton = nullptr;
+
+// Game folder (contains DATA); set in wmain. The HD texture workshop works there.
+std::filesystem::path gGameDir;
 
 // Command line argument (custom install dir) we were started with, so a language switch can restart us identically.
 std::wstring gInstallDirArg;
@@ -350,6 +356,55 @@ void refreshDerivedState()
   EnableWindow(testNetworkButton, checked);
 }
 
+
+std::filesystem::path hdToolDir() { return std::filesystem::path(getFolderThisExeIsIn()) / L"hdtools"; }
+
+void refreshHdTexturesButton()
+{
+  SetWindowTextW(hdTexturesButton, hdTextures::generated(gGameDir) ? T(L"Make again\u2026", L"Neu erzeugen\u2026")
+                                                                   : T(L"Generate\u2026", L"Erzeugen\u2026"));
+}
+
+// Asks, then generates the HD textures with a progress window. true = textures are ready.
+bool generateHdTextures()
+{
+  const bool again = hdTextures::generated(gGameDir);
+  std::wstring question = again
+    ? T(L"Make the HD textures again from your game files?\n\nThis replaces the current HD textures.",
+        L"HD-Texturen neu aus deinen Spieldateien erzeugen?\n\nDie bisherigen HD-Texturen werden dabei ersetzt.")
+    : T(L"The graphics workshop now upscales about 1,600 textures of your game with AI (Real-ESRGAN): "
+        L"build icons, units, buildings and terrain. Effects stay original.\n\n"
+        L"This takes about 5 to 30 minutes, depending on your graphics card, and needs about 400 MB of disk space. "
+        L"You can cancel at any time.\n\nStart now?",
+        L"Die Grafik-Werkstatt rechnet jetzt rund 1.600 Texturen deines Spiels mit KI hoch (Real-ESRGAN): "
+        L"Bau-Icons, Einheiten, Geb\u00e4ude und Boden. Effekte bleiben original.\n\n"
+        L"Das dauert je nach Grafikkarte etwa 5 bis 30 Minuten und braucht rund 400 MB Platz. "
+        L"Du kannst jederzeit abbrechen.\n\nJetzt starten?");
+  if (MessageBoxW(window, question.c_str(), T(L"Graphics workshop", L"Grafik-Werkstatt"), MB_YESNO | MB_ICONQUESTION) != IDYES)
+    return false;
+
+  std::wstring error = hdTexturesUi::run(window, gUiFont, S, hdToolDir(), gGameDir);
+  refreshHdTexturesButton();
+  if (error == L"cancelled")
+    return false;
+  if (!error.empty())
+  {
+    MessageBoxW(window, (T(L"The HD textures could not be generated.\n\n", L"Die HD-Texturen konnten nicht erzeugt werden.\n\n") + error).c_str(),
+                T(L"Graphics workshop", L"Grafik-Werkstatt"), MB_OK | MB_ICONWARNING);
+    return false;
+  }
+  MessageBoxW(window, T(L"Done! The HD textures are switched on. You can switch them off at any time with the tick box.",
+                        L"Fertig! Die HD-Texturen sind eingeschaltet. Du kannst sie jederzeit \u00fcber das H\u00e4kchen wieder ausschalten."),
+              T(L"Graphics workshop", L"Grafik-Werkstatt"), MB_OK | MB_ICONINFORMATION);
+  return true;
+}
+
+void setHdTexturesOn(bool on)
+{
+  settings.hdTextures = on;
+  settings.writeSettings();
+  SendMessageA(hdTexturesCheckbox, BM_SETCHECK, on ? BST_CHECKED : BST_UNCHECKED, 0);
+}
 
 void loadAndApplySettings()
 {
@@ -390,6 +445,11 @@ void loadAndApplySettings()
   SendMessageA(moneyCheatCheckbox, BM_SETCHECK, settings.moneyCheat ? BST_CHECKED : BST_UNCHECKED, 0);
   SendMessageA(largeFontCheckbox, BM_SETCHECK, settings.largeFont ? BST_CHECKED : BST_UNCHECKED, 0);
   SendMessageA(modsCheckbox, BM_SETCHECK, settings.mods ? BST_CHECKED : BST_UNCHECKED, 0);
+  // Without generated textures the box can't be on (e.g. after a reinstall of the game).
+  if (settings.hdTextures && !hdTextures::generated(gGameDir))
+    settings.hdTextures = false;
+  SendMessageA(hdTexturesCheckbox, BM_SETCHECK, settings.hdTextures ? BST_CHECKED : BST_UNCHECKED, 0);
+  refreshHdTexturesButton();
 
   refreshDerivedState();
 }
@@ -448,6 +508,25 @@ LRESULT onGraphicsChanged(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
       settings.graphicsStyle = index == 2 ? 1 : 0;
     settings.writeSettings();
   }
+  return CallWindowProc(defWndProc, hwnd, message, wParam, lParam);
+}
+
+LRESULT onHdTexturesCheckboxClicked(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+  bool on = SendMessage(hdTexturesCheckbox, BM_GETCHECK, 0, 0) == BST_CHECKED;
+  // Switched on but nothing generated yet: offer to do it now. The player decides.
+  if (on && !hdTextures::generated(gGameDir))
+    on = generateHdTextures();
+  setHdTexturesOn(on);
+  return CallWindowProc(defWndProc, hwnd, message, wParam, lParam);
+}
+
+LRESULT onHdTexturesButtonClicked(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+  if (generateHdTextures())
+    setHdTexturesOn(true);
+  else if (!hdTextures::generated(gGameDir))
+    setHdTexturesOn(false);
   return CallWindowProc(defWndProc, hwnd, message, wParam, lParam);
 }
 
@@ -650,6 +729,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
   if (message == WM_COMMAND && HIWORD(wParam) == BN_CLICKED && reinterpret_cast<HWND>(lParam) == moneyCheatCheckbox) return onMoneyCheatCheckboxClicked(hwnd, message, wParam, lParam);
   if (message == WM_COMMAND && HIWORD(wParam) == BN_CLICKED && reinterpret_cast<HWND>(lParam) == largeFontCheckbox) return onLargeFontCheckboxClicked(hwnd, message, wParam, lParam);
   if (message == WM_COMMAND && HIWORD(wParam) == BN_CLICKED && reinterpret_cast<HWND>(lParam) == shortcutButton) return OnShortcutClicked(hwnd, message, wParam, lParam);
+  if (message == WM_COMMAND && HIWORD(wParam) == BN_CLICKED && reinterpret_cast<HWND>(lParam) == hdTexturesCheckbox) return onHdTexturesCheckboxClicked(hwnd, message, wParam, lParam);
+  if (message == WM_COMMAND && HIWORD(wParam) == BN_CLICKED && reinterpret_cast<HWND>(lParam) == hdTexturesButton) return onHdTexturesButtonClicked(hwnd, message, wParam, lParam);
   if (message == WM_COMMAND && HIWORD(wParam) == BN_CLICKED && reinterpret_cast<HWND>(lParam) == modsCheckbox) return onModsCheckboxClicked(hwnd, message, wParam, lParam);
   if (message == WM_COMMAND && HIWORD(wParam) == BN_CLICKED && reinterpret_cast<HWND>(lParam) == modsFolderButton) return OnModsFolderClicked(hwnd, message, wParam, lParam);
   if (message == WM_COMMAND && HIWORD(wParam) == BN_CLICKED && reinterpret_cast<HWND>(lParam) == testNetworkButton) return OnTestNetworkClicked(hwnd, message, wParam, lParam);
@@ -821,6 +902,7 @@ int wmain(int argc, wchar_t* argv[])
   }
   else
     installDirUnicode = getFolderThisExeIsIn() + L"\\data";
+  gGameDir = installDirUnicode;
 
   // This is unfortunate, but I just don't want to deal with debugging it.
   // Pretty sure the base game won't work anyway, even if I fix my code.
@@ -940,7 +1022,7 @@ int wmain(int argc, wchar_t* argv[])
 
   // --- Graphics (left) ---
   {
-    const int h = S(236);
+    const int h = S(258);
     groupBox(T(L"Graphics", L"Grafik"), colL, y0, colLW, h);
     int x = colL + S(14);
     int y = y0 + S(24);
@@ -980,6 +1062,17 @@ int wmain(int argc, wchar_t* argv[])
     SendMessageW(cameraZoomCombo, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(T(L"A little farther (1.25x)", L"Etwas weiter (1,25x)")));
     SendMessageW(cameraZoomCombo, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(T(L"Farther (1.5x, recommended)", L"Weiter (1,5x, empfohlen)")));
     SendMessageW(cameraZoomCombo, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(T(L"Far (1.75x)", L"Sehr weit (1,75x)")));
+    y += rowH + S(10);
+
+    // Grafik-Werkstatt: AI-upscaled textures, made on this PC from the player's own game files.
+    // Greyed out when the launcher was built without the bundled Real-ESRGAN (developer builds).
+    hdTexturesCheckbox = CreateWindowEx(0, WC_BUTTON, T(L"HD textures (AI)", L"HD-Texturen (KI)"), WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTOCHECKBOX, x, y + S(2), S(170), S(22), window, nullptr, nullptr, nullptr);
+    hdTexturesButton = CreateWindowEx(0, WC_BUTTON, T(L"Generate\u2026", L"Erzeugen\u2026"), WS_CHILD | WS_VISIBLE | WS_TABSTOP, x + S(186), y, S(116), S(26), window, nullptr, nullptr, nullptr);
+    if (!hdTextures::toolAvailable(hdToolDir()))
+    {
+      EnableWindow(hdTexturesCheckbox, FALSE);
+      EnableWindow(hdTexturesButton, FALSE);
+    }
   }
 
   // --- Language + Advanced (right) ---
@@ -991,7 +1084,7 @@ int wmain(int argc, wchar_t* argv[])
     SendMessageW(languageCombo, CB_SETCURSEL, gLang == Lang::DE ? 1 : 0, 0);
 
     int gy = y0 + S(70);
-    groupBox(T(L"Troubleshooting", L"Fehlersuche"), colR, gy, colRW, S(166));
+    groupBox(T(L"Troubleshooting", L"Fehlersuche"), colR, gy, colRW, S(188));
     int x = colR + S(14);
     int y = gy + S(24);
     pauseOnStartupCheckbox = CreateWindowEx(0, WC_BUTTON, T(L"Pause on startup", L"Beim Start pausieren"), WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTOCHECKBOX, x, y, colRW - S(24), S(22), window, nullptr, nullptr, nullptr);
@@ -1002,7 +1095,7 @@ int wmain(int argc, wchar_t* argv[])
   }
 
   // --- Multiplayer (full width) ---
-  int mpY = y0 + S(248);
+  int mpY = y0 + S(270);
   {
     const int h = S(132);
     groupBox(L"Multiplayer", colL, mpY, clientW - S(32), h);
@@ -1135,6 +1228,16 @@ int wmain(int argc, wchar_t* argv[])
         MessageBoxW(nullptr, (T(L"These mod folders were skipped because the game has no archive with that name:\n\n",
                                 L"Diese Mod-Ordner wurden \u00fcbersprungen, weil das Spiel kein Archiv mit diesem Namen hat:\n\n") + modResult.warnings).c_str(),
                     L"Emperor Spice", MB_OK | MB_ICONINFORMATION);
+    }
+
+    // HD textures (Grafik-Werkstatt): put the generated archive into DATA, or take it out. Last, so its
+    // archive number comes after the mods; mod files still win because they are newer.
+    {
+      std::wstring hdError = hdTextures::apply(std::filesystem::path(installDirUnicode), settings.hdTextures);
+      if (!hdError.empty())
+        MessageBoxW(nullptr, (T(L"The HD textures could not be switched - the game may start with the original textures.\n\n",
+                                L"Die HD-Texturen konnten nicht umgeschaltet werden - das Spiel startet eventuell mit den Original-Texturen.\n\n") + hdError).c_str(),
+                    L"Emperor Spice", MB_OK | MB_ICONWARNING);
     }
 
     createGlobalCommsFileMappingHandle();

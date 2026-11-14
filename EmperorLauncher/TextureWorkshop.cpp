@@ -1,11 +1,14 @@
 // Grafik-Werkstatt: Windows side (runs realesrgan-ncnn-vulkan.exe). Recipes and archives: HdWorkshopCore.hpp.
+#ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef NOMINMAX
 #define NOMINMAX
+#endif
 #include <windows.h>
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_IMPLEMENTATION
-#define STBI_WINDOWS_UTF8
-#define STBIW_WINDOWS_UTF8
+#define STBI_ONLY_PNG // we only read PNG (Real-ESRGAN output) and zlib (game archives)
 #include "TextureWorkshop.hpp"
 #include "HdWorkshopCore.hpp"
 
